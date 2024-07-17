@@ -54,8 +54,12 @@ class UserController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        if (!isset($data['email']) || !isset($data['name']) || !isset($data['password']) || !isset($data['company_id'])) {
-            return $this->json(['message' => 'Missing required fields'], 400);
+        if (!isset($data['company_code'])) {
+            return $this->json(['message' => 'Missing company code '], 400);
+        }
+
+        if (!isset($data['email']) || !isset($data['name']) || !isset($data['password'])) {
+            return $this->json(['message' => 'Missing required fields (email or name or password)'], 400);
         }
 
         $existingUser = $this->userRepository->findOneBy(['email' => $data['email']]);
@@ -63,7 +67,8 @@ class UserController extends AbstractController
             return $this->json(['message' => 'Email already exists'], 400);
         }
 
-        $company = $this->companyRepository->find($data['company_id']);
+        
+        $company = $this->companyRepository->findOneBy(['code' => $data['company_code']]);
 
         if (!$company) {
             return new JsonResponse(['status' => 0, 'message' => 'Company not found'], JsonResponse::HTTP_NOT_FOUND);

@@ -38,7 +38,7 @@ class CompanyController extends AbstractController
     }
 
     #[Route('', methods: ['POST'])]
-    public function create(Request $request ): JsonResponse
+    public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
@@ -53,6 +53,7 @@ class CompanyController extends AbstractController
 
 
         $company = new Company();
+        $company->setCode($this->generateCode());
         $company->setName($data['name']);
         $company->setTel($data['tel'] ?? null);
         $company->setEmail($data['email']);
@@ -134,5 +135,17 @@ class CompanyController extends AbstractController
         $this->entityManager->flush();
 
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
+    }
+
+
+    function generateCode()
+    {
+        $nbChar = 4;
+        $code = str_pad(rand(0, pow(10, $nbChar) - 1), $nbChar, '0', STR_PAD_LEFT);
+        $existingCompany = $this->companyRepository->findOneBy(['code' => $code]);
+        if ($existingCompany) {
+            $this->generateCode();
+        }
+        return $code;
     }
 }

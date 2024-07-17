@@ -56,6 +56,10 @@ class Company
     #[Groups(['company:read'])]
     private ?\DateTimeInterface $createdAt = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['company:read', 'company:write'])]
+    private ?string $code = null;
+
     // Getters and Setters
 
     public function getId(): ?int
@@ -155,6 +159,18 @@ class Company
     public function setCreatedAt(\DateTimeInterface $createdAt): self
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getCode(): ?string
+    {
+        return $this->code;
+    }
+
+    public function setCode(?string $code): self
+    {
+        $this->code = $code;
 
         return $this;
     }
