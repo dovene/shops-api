@@ -1,0 +1,23 @@
+resources:
+  App\Entity\Company:
+    normalizationContext:
+      groups: ['company:read']
+    denormalizationContext:
+      groups: ['company:write']
+    operations:
+      ApiPlatform\Metadata\GetCollection:
+        method: 'GET'
+        path: '/companies'
+      ApiPlatform\Metadata\Get:
+        method: 'GET'
+        path: '/companies/{id}'
+      ApiPlatform\Metadata\Post:
+        method: 'POST'
+        path: '/companies'
+        input: 'App\Entity\Company'
+      ApiPlatform\Metadata\Put:
+        method: 'PUT'
+        path: '/companies/{id}'
+      ApiPlatform\Metadata\Delete:
+        method: 'DELETE'
+        path: '/companies/{id}'
