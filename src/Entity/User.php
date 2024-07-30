@@ -6,32 +6,57 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-
+use Symfony\Component\Serializer\Annotation as Serializer;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
+/*
+#[ApiResource(
+    normalizationContext: ['groups' => ['user:read']],
+    denormalizationContext: ['groups' => ['user:write']],
+    operations: [
+        new Get(),
+        new GetCollection(),
+        new Post(),
+        new Put(),
+        new Delete()
+    ]
+)]*/
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
+    #[Serializer\Groups(groups: ['user:read', 'company:read'])]
     private $id;
 
     #[ORM\Column(type: 'string', length: 45, unique: true)]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
     private $email;
 
     #[ORM\Column(type: 'string', length: 255)]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
     private $name;
 
     #[ORM\Column(type: 'string', length: 100)]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
     private $password;
 
     #[ORM\Column(type: 'string', length: 45, options: ["default" => "user"])]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
     private $role = 'user';
 
     #[ORM\Column(type: 'string', length: 45, options: ["default" => "enabled"])]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
     private $status = 'enabled';
 
     #[ORM\ManyToOne(targetEntity: Company::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(name: "company_id", referencedColumnName: "id", nullable: false)]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
     private $company;
 
     // Getters and Setters

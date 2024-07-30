@@ -1,6 +1,6 @@
-DROP DATABASE IF EXISTS `u720146064_shops `;
-CREATE DATABASE u720146064_shops ;
-USE u720146064_shops ;
+#DROP DATABASE IF EXISTS `u720146064_shops `;
+#CREATE DATABASE u720146064_shops ;
+#USE u720146064_shops ;
 
 
 DROP TABLE IF EXISTS `event_item`;
@@ -29,7 +29,7 @@ CREATE TABLE `company` (
   UNIQUE KEY `name_UNIQUE` (`name`)
 ) ;
 
-
+INSERT INTO company (name, email, code) VALUES ("company","mail@mail.com","0000");
 
 CREATE TABLE `user` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -44,6 +44,8 @@ CREATE TABLE `user` (
   FOREIGN KEY (`company_id`) REFERENCES `company` (`id`)
 );
 
+INSERT INTO user (name, email, password, company_id) VALUES ("tester","tester@mail.com","coucou10", 1);
+
 
 CREATE TABLE `item_category` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -52,10 +54,13 @@ CREATE TABLE `item_category` (
   `user_id` int NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name_category` (`name`),
+  UNIQUE KEY `name_category` (`name`,`company_id`),
   FOREIGN KEY (`company_id`) REFERENCES `company` (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ); 
+
+INSERT INTO item_category (name, user_id, company_id) VALUES ("global",1,1);
+
 
 CREATE TABLE `event_type` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -67,8 +72,11 @@ CREATE TABLE `event_type` (
   UNIQUE KEY `name_UNIQUE` (`name`)
 );
 
-INSERT INTO event_type (name) VALUES ("ACHATS");
-INSERT INTO event_type (name) VALUES ("VENTES");
+INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("ACHATS",1);
+INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("VENTES",0);
+INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("DEFECTUEUX",0);
+INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("ENTREE GRATUITE",1);
+
 
 CREATE TABLE `business_partner` (
   `id` int NOT NULL AUTO_INCREMENT,

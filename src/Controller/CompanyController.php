@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/company')]
+#[Route('/api/companies')]
 class CompanyController extends AbstractController
 {
     private $entityManager;
@@ -108,6 +108,7 @@ class CompanyController extends AbstractController
         $company->setCountry($data['country'] ?? $company->getCountry());
         $company->setAddressDetails($data['address_details'] ?? $company->getAddressDetails());
         $company->setStatus($data['status'] ?? $company->getStatus());
+        $company->setCode($data['code'] ?? $company->getCode());
 
         $errors = $this->validator->validate($company);
 

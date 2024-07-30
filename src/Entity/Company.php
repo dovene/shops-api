@@ -7,7 +7,24 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
+/*
+#[ApiResource(
+    normalizationContext: ['groups' => ['company:read']],
+    denormalizationContext: ['groups' => ['company:write']],
+    operations: [
+        new Get(),
+        new GetCollection(),
+        new Post(),
+        new Put(),
+        new Delete()
+    ]
+)]*/
 #[ORM\Entity(repositoryClass: CompanyRepository::class)]
 #[UniqueEntity(fields: ['email'],
 message: 'Cet email est déjà utilisé')]
@@ -18,11 +35,11 @@ class Company
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['company:read'])]
-    private ?int $id = null;
+    #[Groups(['company:read', 'user:read'])]
+    private ?int $id;
 
     #[ORM\Column(length: 100, unique: true)]
-    #[Groups(['company:read', 'company:write'])]
+    #[Groups(['company:read', 'company:write', 'user:read'])]
     #[Assert\NotBlank]
     private ?string $name = null;
 
