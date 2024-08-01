@@ -75,7 +75,7 @@ CREATE TABLE `event_type` (
 INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("ACHATS",1);
 INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("VENTES",0);
 INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("DEFECTUEUX",0);
-INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("ENTREE GRATUITE",1);
+INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("APPORTS GRATUITS",1);
 
 
 CREATE TABLE `business_partner` (
@@ -91,26 +91,29 @@ CREATE TABLE `business_partner` (
   `user_id` int NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_name` (`name`),
+  UNIQUE KEY `unique_name` (`name`,`company_id`),
   FOREIGN KEY (`company_id`) REFERENCES `company` (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 );
 
+INSERT INTO business_partner (name, user_id, company_id) VALUES ("madi bar",1,1);
+INSERT INTO business_partner (name, user_id, company_id) VALUES ("koko star",1,1);
 
 CREATE TABLE `item` (
   `id` int NOT NULL AUTO_INCREMENT,
   `reference` varchar(45) NOT NULL,
   `name` varchar(100) NOT NULL,
+  `picture` varchar(300) DEFAULT NULL,
+  `sell_price` double DEFAULT '0',
+  `buy_price` double DEFAULT '0',
+  `quantity` int DEFAULT '0',
   `item_category_id` int NOT NULL,
   `company_id` int NOT NULL,
-  `picture` varchar(300) DEFAULT NULL,
-  `price` double DEFAULT '0',
-  `quantity` int DEFAULT '0',
   `user_id` int NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_name` (`name`),
-  UNIQUE KEY `reference_UNIQUE` (`reference`),
+  UNIQUE KEY `unique_name` (`name`,`company_id`),
+  UNIQUE KEY `reference_UNIQUE` (`reference`,`company_id`),
   FOREIGN KEY (`company_id`) REFERENCES `company` (`id`),
   FOREIGN KEY (`item_category_id`) REFERENCES `item_category` (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)

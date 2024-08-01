@@ -21,9 +21,12 @@ class UserController extends AbstractController
     private CompanyRepository $companyRepository;
     private $passwordHasher;
 
-    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, 
-    CompanyRepository $companyRepository, UserPasswordHasherInterface $passwordHasher)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        UserRepository $userRepository,
+        CompanyRepository $companyRepository,
+        UserPasswordHasherInterface $passwordHasher
+    ) {
         $this->entityManager = $entityManager;
         $this->userRepository = $userRepository;
         $this->companyRepository = $companyRepository;
@@ -67,7 +70,7 @@ class UserController extends AbstractController
             return $this->json(['message' => 'Email already exists'], 400);
         }
 
-        
+
         $company = $this->companyRepository->findOneBy(['code' => $data['company_code']]);
 
         if (!$company) {
@@ -161,21 +164,23 @@ class UserController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        if (empty($data['email']) || empty($data['password'])) {
-            return $this->json(['status' => 0, 'message' => 'Email and password are required'], JsonResponse::HTTP_BAD_REQUEST);
+        if (empty($data['email']) || empty($data['password']) || empty($data['company_code'])) {
+            return $this->json(['status' => 0, 'message' => 'Email, password and company code are required'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $user = $this->userRepository->findOneBy(['email' => $data['email']]);
+        $company = $this->companyRepository->findOneBy(['code' => $data['company_code']]);
+        if (!$company) {
+            return new JsonResponse(['status' => 0, 'message' => 'Company not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $user = $this->userRepository->findOneBy(['email' => $data['email'], 'company' => $company]);
         if (!$user) {
-            return $this->json(['status' => 0, 'message' => 'Invalid credentials'], JsonResponse::HTTP_UNAUTHORIZED);
+            return $this->json(['status' => 0, 'message' => 'Invalid email for this company'], JsonResponse::HTTP_UNAUTHORIZED);
         }
-
         if (!$this->passwordHasher->isPasswordValid($user, $data['password'])) {
-            return $this->json(['status' => 0, 'message' => 'Invalid credentials'], JsonResponse::HTTP_UNAUTHORIZED);
+            return $this->json(['status' => 0, 'message' => 'Invalid password'], JsonResponse::HTTP_UNAUTHORIZED);
         }
-
-        // Normally, here you would generate a JWT token and return it to the user
-        // For simplicity, we will return the user details directly
+        
         return $this->json(['status' => 1, 'message' => 'Login successful', 'user' => $user]);
     }
 }
