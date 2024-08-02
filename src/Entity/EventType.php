@@ -38,7 +38,7 @@ class EventType
     private ?int $id;
 
     #[ORM\Column(length: 100, unique: true)]
-    #[Groups(['eventtype:read', 'eventtype:write'])]
+    #[Groups(['eventtype:read', 'eventtype:write', 'event:read'])]
     #[Assert\NotBlank]
     private ?string $name = null;
 

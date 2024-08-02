@@ -23,26 +23,26 @@ use Symfony\Component\Serializer\Annotation as Serializer;
 class EventItem
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue(strategy: "AUTO")]
+    #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    #[Serializer\Groups(groups: ['eventitem:read'])]
+    #[Serializer\Groups(groups: ['eventitem:read',])]
     private int $id;
 
     #[ORM\Column(type: "integer")]
-    #[Serializer\Groups(['eventitem:read', 'eventitem:write'])]
+    #[Serializer\Groups(['eventitem:read', 'eventitem:write', 'event:read'])]
     private int $quantity;
 
     #[ORM\Column(type: "float", nullable: true)]
-    #[Serializer\Groups(['eventitem:read', 'eventitem:write'])]
+    #[Serializer\Groups(['eventitem:read', 'eventitem:write', 'event:read'])]
     private ?float $price;
 
-    #[ORM\ManyToOne(targetEntity: Event::class)]
+    #[ORM\ManyToOne(targetEntity: Event::class, inversedBy: 'eventItems')]
     #[Serializer\Groups(['eventitem:read', 'eventitem:write'])]
     #[ORM\JoinColumn(name: "event_id", referencedColumnName: "id",nullable: false)]
     private Event $event;
 
     #[ORM\ManyToOne(targetEntity: Item::class)]
-    #[Serializer\Groups(['eventitem:read', 'eventitem:write'])]
+    #[Serializer\Groups(['eventitem:read', 'eventitem:write', 'event:read'])]
     #[ORM\JoinColumn(name: "item_id", referencedColumnName: "id",nullable: false)]
     private Item $item;
 
@@ -79,7 +79,7 @@ class EventItem
         return $this->event;
     }
 
-    public function setEvent(Event $event): self
+    public function setEvent(?Event $event): self
     {
         $this->event = $event;
         return $this;

@@ -35,11 +35,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private $id;
 
     #[ORM\Column(type: 'string', length: 45, unique: true)]
-    #[Serializer\Groups(groups: ['user:read','user:write'])]
+    #[Serializer\Groups(groups: ['user:read','user:write', 'event:read'])]
     private $email;
 
     #[ORM\Column(type: 'string', length: 255)]
-    #[Serializer\Groups(groups: ['user:read','user:write'])]
+    #[Serializer\Groups(groups: ['user:read','user:write', 'event:read'])]
     private $name;
 
     #[ORM\Column(type: 'string', length: 100)]

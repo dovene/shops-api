@@ -52,7 +52,8 @@ class EventController extends AbstractController
     public function index(): JsonResponse
     {
         $items = $this->eventRepository->findAll();
-        $data = $this->serializer->serialize($items, 'json', ['groups' => 'event:read']);
+        $data = $this->serializer->serialize($items, 'json', ['groups' => 'event:read',
+        'eventitem:read','company:read']);
 
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
@@ -60,13 +61,14 @@ class EventController extends AbstractController
     #[Route('/{id}', methods: ['GET'])]
     public function show(int $id): JsonResponse
     {
-        $Item = $this->eventRepository->find($id);
+        $item = $this->eventRepository->find($id);
 
-        if (!$Item) {
+        if (!$item) {
             return $this->json(['message' => 'Event not found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
-        return $this->json($Item);
+        $data = $this->serializer->serialize($item, 'json', ['groups' => 'event:read']);
+        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
 
 
@@ -164,6 +166,27 @@ class EventController extends AbstractController
         $event = $this->eventRepository->find($id);
         if (!$event) {
             return $this->json(['message' => 'Event not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+         // Check if we are cancelling the event and handle rollback
+         if ($data['status'] === 'CANCELLED') {
+            // Rollback the item quantities
+            $eventItems = $event->getEventItems();
+            $eventType = $event->getEventType();
+
+            foreach ($eventItems as $eventItem) {
+                $item = $eventItem->getItem();
+
+                if ($eventType->getIsAnIncreaseStockType()) {
+                    // Event was increasing stock, so rollback by decreasing quantity
+                    $item->setQuantity($item->getQuantity() - $eventItem->getQuantity());
+                } else {
+                    // Event was decreasing stock, so rollback by increasing quantity
+                    $item->setQuantity($item->getQuantity() + $eventItem->getQuantity());
+                }
+
+                $this->entityManager->persist($item);
+            }
         }
 
         $event->setStatus($data['status']);

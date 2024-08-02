@@ -40,12 +40,12 @@ class Item
     private ?int $id;
 
     #[ORM\Column(length: 100, nullable: false)]
-    #[Serializer\Groups(groups: ['item:read','item:write'])]
+    #[Serializer\Groups(groups: ['item:read','item:write','event:read'])]
     #[Assert\NotBlank]
     private ?string $name = null;
 
     #[ORM\Column(length: 45, nullable: true)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','event:read'])]
     #[Assert\NotBlank]
     private ?string $reference = null;
 

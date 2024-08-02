@@ -37,7 +37,7 @@ class BusinessPartner
     private ?int $id;
 
     #[ORM\Column(length: 100, nullable: false)]
-    #[Serializer\Groups(groups: ['businesspartner:read','businesspartner:write'])]
+    #[Serializer\Groups(groups: ['businesspartner:read','businesspartner:write', 'event:read'])]
     #[Assert\NotBlank]
     private ?string $name = null;
 

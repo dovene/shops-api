@@ -87,9 +87,9 @@ class Event
     #[Serializer\Groups(groups: ['event:read'])]
     private ?\DateTimeInterface $createdAt = null;
 
-    /*#[ORM\OneToMany(mappedBy: 'event', targetEntity: EventItem::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(mappedBy: 'event', targetEntity: EventItem::class, cascade: ['persist', 'remove'])]
     #[Serializer\Groups(groups: ['event:read'])]
-    private $eventItems;*/
+    private $eventItems;
    
 
     // Getters and Setters
@@ -234,7 +234,7 @@ class Event
         return $this;
     }
 
-/*
+
     public function getEventItems(): Collection
     {
         return $this->eventItems;
@@ -248,6 +248,6 @@ class Event
         }
 
         return $this;
-    }*/
+    }
 
 }
