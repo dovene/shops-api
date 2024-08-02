@@ -113,12 +113,12 @@ class BusinessPartnerController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
 
-        if (isset($data['name']) && isset($data['company_id'])) {
+       /* if (isset($data['name']) && isset($data['company_id'])) {
             $existingItemCategory = $this->businessPartnerRepository->findOneBy(['name' => $data['name'], 'company' => $data['company_id']]);
             if ($existingItemCategory) {
             return $this->json(['message' => 'Name already exists for this company'], 400);
             }
-        }
+        }*/
 
         $instance->setName($data['name']?? $instance->getName());    
         $instance->setTel($data['tel'] ?? $instance->getTel());

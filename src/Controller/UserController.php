@@ -106,13 +106,13 @@ class UserController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        if (isset($data['email'])) {
+        /*if (isset($data['email'])) {
             $existingUser = $this->userRepository->findOneBy(['email' => $data['email']]);
             if ($existingUser && $existingUser->getId() !== $id) {
                 return $this->json(['message' => 'Email already exists'], 400);
             }
             $user->setEmail($data['email']);
-        }
+        }*/
 
         if (isset($data['name'])) {
             $user->setName($data['name']);

@@ -167,12 +167,12 @@ class Item
         return $this;
     }
 
-    public function getBuyPrice(): ?string
+    public function getBuyPrice(): ?float
     {
         return $this->buyPrice;
     }
 
-    public function setBuyPrice(?string $buyPrice): self
+    public function setBuyPrice(?float $buyPrice): self
     {
         $this->buyPrice = $buyPrice;
 
@@ -180,24 +180,24 @@ class Item
     }
 
 
-    public function getQuantity(): ?string
+    public function getQuantity(): ?int
     {
         return $this->quantity;
     }
 
-    public function setQuantity(string $quantity): self
+    public function setQuantity(int $quantity): self
     {
         $this->quantity = $quantity;
 
         return $this;
     }
 
-    public function getSellPrice(): ?string
+    public function getSellPrice(): ?float
     {
         return $this->sellPrice;
     }
 
-    public function setSellPrice(?string $sellPrice): self
+    public function setSellPrice(?float $sellPrice): self
     {
         $this->sellPrice = $sellPrice;
 

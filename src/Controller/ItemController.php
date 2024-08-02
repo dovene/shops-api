@@ -123,12 +123,12 @@ class ItemController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
 
-        if (isset($data['name']) && isset($data['company_id'])) {
+       /* if (isset($data['name']) && isset($data['company_id'])) {
             $existingInstance = $this->itemRepository->findOneBy(['name' => $data['name'], 'company' => $data['company_id']]);
             if ($existingInstance) {
             return $this->json(['message' => 'Item name already exists for this company'], 400);
             }
-        }
+        }*/
 
         $instance->setName($data['name']?? $instance->getName());    
         $instance->setReference($data['reference'] ?? $instance->getReference());
@@ -149,7 +149,7 @@ class ItemController extends AbstractController
         $instance = $this->itemRepository->find($id);
 
         if (!$instance) {
-            return new JsonResponse(['status' => 0, 'message' => 'Partner not found'], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse(['status' => 0, 'message' => 'Item not found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
         $this->entityManager->remove($instance);
