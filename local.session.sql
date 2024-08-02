@@ -65,17 +65,17 @@ INSERT INTO item_category (name, user_id, company_id) VALUES ("global",1,1);
 CREATE TABLE `event_type` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(45) NOT NULL,
-  `isFree` tinyint NOT NULL DEFAULT '0',
-  `isAnIncreaseStockType` tinyint NOT NULL DEFAULT '0',
+  `is_free` tinyint NOT NULL DEFAULT '0',
+  `is_an_increase_stock_type` tinyint NOT NULL DEFAULT '0',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name_UNIQUE` (`name`)
 );
 
-INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("ACHATS",1);
-INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("VENTES",0);
-INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("DEFECTUEUX",0);
-INSERT INTO event_type (name, isAnIncreaseStockType) VALUES ("APPORTS GRATUITS",1);
+INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("ACHATS",1);
+INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("VENTES",0);
+INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("DEFECTUEUX",0);
+INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("APPORTS GRATUITS",1);
 
 
 CREATE TABLE `business_partner` (
