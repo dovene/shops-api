@@ -146,7 +146,8 @@ class EventController extends AbstractController
         // Finally, flush all changes
         $this->entityManager->flush();
 
-        return $this->json($event, JsonResponse::HTTP_CREATED);
+        $data = $this->serializer->serialize($event, 'json', ['groups' => 'event:read']);
+        return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
     }
 
     #[Route('/{id}', methods: ['PATCH'])]
@@ -192,6 +193,7 @@ class EventController extends AbstractController
         $event->setStatus($data['status']);
         $this->entityManager->flush();
 
-        return $this->json($event);
+        $data = $this->serializer->serialize($event, 'json', ['groups' => 'event:read']);
+        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
 }

@@ -91,6 +91,10 @@ class Event
     #[Serializer\Groups(groups: ['event:read'])]
     private $eventItems;
    
+    public function __construct()
+    {
+        $this->eventItems = new ArrayCollection();
+    }
 
     // Getters and Setters
 
