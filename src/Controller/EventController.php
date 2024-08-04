@@ -196,4 +196,19 @@ class EventController extends AbstractController
         $data = $this->serializer->serialize($event, 'json', ['groups' => 'event:read']);
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
+
+    #[Route('/company/{id}', methods: ['GET'])]
+    public function findEventsByCompany(int $id): JsonResponse
+    {
+
+        $events = $this->eventRepository->findBy( ['company' => $id ]);
+
+        if (!$events) {
+            return $this->json(['message' => 'events not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $data = $this->serializer->serialize($events, 'json', ['groups' => 'event:read']);
+
+        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
+    }
 }

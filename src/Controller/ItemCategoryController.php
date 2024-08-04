@@ -138,5 +138,20 @@ class ItemCategoryController extends AbstractController
         return $this->json(['message' => 'item category deleted successfully']);
     }
 
-   
+    
+    #[Route('/company/{id}', methods: ['GET'])]
+    public function findItemCategoriesByCompany(int $id): JsonResponse
+    {
+
+        $itemCategories = $this->itemCategoryRepository->findBy( ['company' => $id ]);
+
+        if (!$itemCategories) {
+            return $this->json(['message' => 'categories not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $data = $this->serializer->serialize($itemCategories, 'json', ['groups' => 'itemcategory:read']);
+
+        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
+    }
+
 }

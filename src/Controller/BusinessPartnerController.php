@@ -148,4 +148,19 @@ class BusinessPartnerController extends AbstractController
 
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
+
+    #[Route('/company/{id}', methods: ['GET'])]
+    public function findPartnersByCompany(int $id): JsonResponse
+    {
+
+        $partners = $this->businessPartnerRepository->findBy( ['company' => $id ]);
+
+        if (!$partners) {
+            return $this->json(['message' => 'partners not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $data = $this->serializer->serialize($partners, 'json', ['groups' => 'businesspartner:read']);
+
+        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
+    }
 }

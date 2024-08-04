@@ -157,4 +157,20 @@ class ItemController extends AbstractController
 
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
+
+
+    #[Route('/company/{id}', methods: ['GET'])]
+    public function findItemsByCompany(int $id): JsonResponse
+    {
+
+        $items = $this->itemRepository->findBy( ['company' => $id ]);
+
+        if (!$items) {
+            return $this->json(['message' => 'items not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $data = $this->serializer->serialize($items, 'json', ['groups' => 'item:read']);
+
+        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
+    }
 }
