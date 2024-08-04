@@ -1,19 +1,13 @@
 api_platform:
     title: Shops
     version: 1.0.0
-    show_webby: false
     formats:
-        json:     ['application/json']
         jsonld:   ['application/json+ld']
+        json:     ['application/json']
     docs_formats:
         jsonld: ['application/ld+json']
         jsonopenapi: ['application/vnd.openapi+json']
         html: ['text/html']
-    swagger:
-        api_keys:
-            JWT:
-                name: Authorization
-                type: header
     defaults:
         stateless: true
         cache_headers:
@@ -21,15 +15,5 @@ api_platform:
         extra_properties:
             standard_put: true
             rfc_7807_compliant_errors: true
-        normalization_context:
-            skip_null_values: false
-    event_listeners_backward_compatibility_layer: false
     keep_legacy_inflector: false
-    collection:
-        pagination:
-            items_per_page_parameter_name: size # Default value
-    mapping:
-        paths:
-            - '%kernel.project_dir%/src/Entity' # default configuration for attributes
-            - '%kernel.project_dir%/config/api_platform' # yaml or xml directory configuration
 
