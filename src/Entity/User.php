@@ -7,6 +7,7 @@ use App\Repository\UserRepository;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation as Serializer;
+use Symfony\Component\Validator\Constraints as Assert;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
@@ -35,6 +36,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private $id;
 
     #[ORM\Column(type: 'string', length: 45, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Email(message: 'Cet email n\'est pas valide')]
     #[Serializer\Groups(groups: ['user:read','user:write', 'event:read'])]
     private $email;
 

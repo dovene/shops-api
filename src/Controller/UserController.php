@@ -181,6 +181,6 @@ class UserController extends AbstractController
             return $this->json(['status' => 0, 'message' => 'Invalid password'], JsonResponse::HTTP_UNAUTHORIZED);
         }
         
-        return $this->json(['status' => 1, 'message' => 'Login successful', 'user' => $user]);
+        return $this->json($user);
     }
 }
