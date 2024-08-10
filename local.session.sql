@@ -29,7 +29,6 @@ CREATE TABLE `company` (
   UNIQUE KEY `name_UNIQUE` (`name`)
 ) ;
 
-INSERT INTO company (name, email, code) VALUES ("company","mail@mail.com","0000");
 
 CREATE TABLE `user` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -44,7 +43,6 @@ CREATE TABLE `user` (
   FOREIGN KEY (`company_id`) REFERENCES `company` (`id`)
 );
 
-INSERT INTO user (name, email, password, company_id) VALUES ("tester","tester@mail.com","coucou10", 1);
 
 
 CREATE TABLE `item_category` (
@@ -59,7 +57,6 @@ CREATE TABLE `item_category` (
   FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ); 
 
-INSERT INTO item_category (name, user_id, company_id) VALUES ("global",1,1);
 
 
 CREATE TABLE `event_type` (
@@ -72,8 +69,8 @@ CREATE TABLE `event_type` (
   UNIQUE KEY `name_UNIQUE` (`name`)
 );
 
-INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("ACHATS",1);
 INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("VENTES",0);
+INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("ACHATS",1);
 INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("DEFECTUEUX",0);
 INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("APPORTS GRATUITS",1);
 
@@ -86,6 +83,7 @@ CREATE TABLE `business_partner` (
   `address` varchar(200) DEFAULT NULL,
   `city` varchar(45) DEFAULT NULL,
   `country` varchar(45) DEFAULT NULL,
+  `type` ENUM('CLIENT', 'FOURNISSEUR', 'GENERAL') NOT NULL DEFAULT 'GENERAL',
   `company_id` int NOT NULL,
   `user_id` int NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -95,8 +93,6 @@ CREATE TABLE `business_partner` (
   FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 );
 
-INSERT INTO business_partner (name, user_id, company_id) VALUES ("madi bar",1,1);
-INSERT INTO business_partner (name, user_id, company_id) VALUES ("koko star",1,1);
 
 CREATE TABLE `item` (
   `id` int NOT NULL AUTO_INCREMENT,

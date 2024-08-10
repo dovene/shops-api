@@ -52,8 +52,11 @@ class EventController extends AbstractController
     public function index(): JsonResponse
     {
         $items = $this->eventRepository->findAll();
-        $data = $this->serializer->serialize($items, 'json', ['groups' => 'event:read',
-        'eventitem:read','company:read']);
+        $data = $this->serializer->serialize($items, 'json', [
+            'groups' => 'event:read',
+            'eventitem:read',
+            'company:read'
+        ]);
 
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
@@ -169,8 +172,8 @@ class EventController extends AbstractController
             return $this->json(['message' => 'Event not found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
-         // Check if we are cancelling the event and handle rollback
-         if ($data['status'] === 'CANCELLED') {
+        // Check if we are cancelling the event and handle rollback
+        if ($data['status'] === 'CANCELLED') {
             // Rollback the item quantities
             $eventItems = $event->getEventItems();
             $eventType = $event->getEventType();
@@ -201,11 +204,11 @@ class EventController extends AbstractController
     public function findEventsByCompany(int $id): JsonResponse
     {
 
-        $events = $this->eventRepository->findBy( ['company' => $id ]);
-
-        if (!$events) {
-            return $this->json(['message' => 'events not found'], JsonResponse::HTTP_NOT_FOUND);
-        }
+        // Retrieve events sorted by createdAt in descending order
+        $events = $this->eventRepository->findBy(
+            ['company' => $id],          // Criteria to filter by company id
+            ['createdAt' => 'DESC']      // Order by the 'createdAt' field in descending order
+        );
 
         $data = $this->serializer->serialize($events, 'json', ['groups' => 'event:read']);
 

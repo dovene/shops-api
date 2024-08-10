@@ -174,11 +174,11 @@ class ItemController extends AbstractController
     public function findItemsByCompany(int $id): JsonResponse
     {
 
-        $items = $this->itemRepository->findBy( ['company' => $id ]);
+        $items = $this->itemRepository->findBy(
+            ['company' => $id],        // Criteria to filter by company id
+            ['name' => 'ASC']          // Order by the 'name' field in ascending order
+        );
 
-        if (!$items) {
-            return $this->json(['message' => 'items not found'], JsonResponse::HTTP_NOT_FOUND);
-        }
 
         $data = $this->serializer->serialize($items, 'json', ['groups' => 'item:read']);
 

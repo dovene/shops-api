@@ -13,6 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Repository\CompanyRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use App\Entity\ItemCategory;
+use App\Entity\BusinessPartner;
 
 class UserController extends AbstractController
 {
@@ -78,18 +80,40 @@ class UserController extends AbstractController
         }
 
 
+        $usersForCompany = $this->userRepository->findBy(['company' => $company]);
+        $isFirstUser = count($usersForCompany) === 0;
+
         $user = new User();
         $user->setEmail($data['email']);
         $user->setName($data['name']);
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($hashedPassword); // In a real app, make sure to hash the password!
-        $user->setRole($data['role'] ?? 'user');
+        $user->setRole($isFirstUser ? 'admin' : ($data['role'] ?? 'user'));
         $user->setStatus($data['status'] ?? 'enabled');
-
-
         $user->setCompany($company);
 
         $this->entityManager->persist($user);
+
+        // If it's the first user, also create a default item category and business partener
+        if ($isFirstUser) {
+            // item category
+            $itemCategory = new ItemCategory();
+            $itemCategory->setName('GENERAL');
+            $itemCategory->setCompany($company);
+            $itemCategory->setUser($user);
+            $itemCategory->setCreatedAt(new \DateTime());
+            $this->entityManager->persist($itemCategory);
+
+             // business partner
+             $businessPartner = new BusinessPartner();
+             $businessPartner->setName('GENERAL');
+             $businessPartner->setCompany($company);
+             $businessPartner->setUser($user);
+             $businessPartner->setType('GENERAL');
+             $businessPartner->setCreatedAt(new \DateTime());
+             $this->entityManager->persist($businessPartner);
+        }
+
         $this->entityManager->flush();
 
         return $this->json($user, 201);
@@ -180,7 +204,7 @@ class UserController extends AbstractController
         if (!$this->passwordHasher->isPasswordValid($user, $data['password'])) {
             return $this->json(['status' => 0, 'message' => 'Invalid password'], JsonResponse::HTTP_UNAUTHORIZED);
         }
-        
+
         return $this->json($user);
     }
 }

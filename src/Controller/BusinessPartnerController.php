@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controller;
 
 use App\Entity\BusinessPartner;
@@ -22,9 +23,13 @@ class BusinessPartnerController extends AbstractController
     private UserRepository $userRepository;
     private $serializer;
 
-    public function __construct(EntityManagerInterface $entityManager, BusinessPartnerRepository $businessPartnerRepository, 
-    CompanyRepository $companyRepository, UserRepository $userRepository, SerializerInterface $serializer)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        BusinessPartnerRepository $businessPartnerRepository,
+        CompanyRepository $companyRepository,
+        UserRepository $userRepository,
+        SerializerInterface $serializer
+    ) {
         $this->entityManager = $entityManager;
         $this->businessPartnerRepository = $businessPartnerRepository;
         $this->companyRepository = $companyRepository;
@@ -56,42 +61,42 @@ class BusinessPartnerController extends AbstractController
     #[Route('', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        
+
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['company_id']) || !isset($data['name']) || !isset($data['user_id'])) {
             return $this->json(['message' => 'Missing required fields (company_id or name or user_id)'], 400);
         }
-        
+
         $existingInstance = $this->businessPartnerRepository->findOneBy(['name' => $data['name'], 'company' => $data['company_id']]);
         if ($existingInstance) {
             return $this->json(['message' => 'Partner already exists for this company'], JsonResponse::HTTP_CONFLICT);
         }
 
-        
+
         $company = $this->companyRepository->findOneBy(['id' => $data['company_id']]);
-      
+
 
         if (!$company) {
             return new JsonResponse(['status' => 0, 'message' => 'Company not found'], JsonResponse::HTTP_NOT_FOUND);
         }
-        
+
         $user = $this->userRepository->findOneBy(['id' => $data['user_id']]);
 
         if (!$user) {
             return new JsonResponse(['status' => 0, 'message' => 'User not found'], JsonResponse::HTTP_NOT_FOUND);
         }
-      
+
 
         $instance = new BusinessPartner();
         $instance->setName($data['name']);
         $instance->setTel($data['tel'] ?? null);
-        $instance->setEmail($data['email']?? "");
+        $instance->setEmail($data['email'] ?? "");
         $instance->setCity($data['city'] ?? null);
         $instance->setCountry($data['country'] ?? null);
         $instance->setAddress($data['address'] ?? null);
-        $instance->setType($data['type'] ?? 'CUSTOMER');
-        $instance->setCompany($company); 
+        $instance->setType($data['type'] ?? 'CLIENT');
+        $instance->setCompany($company);
         $instance->setUser($user);
         $instance->setCreatedAt(new \DateTime());
 
@@ -113,14 +118,14 @@ class BusinessPartnerController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
 
-       /* if (isset($data['name']) && isset($data['company_id'])) {
+        /* if (isset($data['name']) && isset($data['company_id'])) {
             $existingItemCategory = $this->businessPartnerRepository->findOneBy(['name' => $data['name'], 'company' => $data['company_id']]);
             if ($existingItemCategory) {
             return $this->json(['message' => 'Name already exists for this company'], 400);
             }
         }*/
 
-        $instance->setName($data['name']?? $instance->getName());    
+        $instance->setName($data['name'] ?? $instance->getName());
         $instance->setTel($data['tel'] ?? $instance->getTel());
         $instance->setEmail($data['email'] ?? $instance->getEmail());
         $instance->setCity($data['city'] ?? $instance->getCity());
@@ -152,12 +157,11 @@ class BusinessPartnerController extends AbstractController
     #[Route('/company/{id}', methods: ['GET'])]
     public function findPartnersByCompany(int $id): JsonResponse
     {
-
-        $partners = $this->businessPartnerRepository->findBy( ['company' => $id ]);
-
-        if (!$partners) {
-            return $this->json(['message' => 'partners not found'], JsonResponse::HTTP_NOT_FOUND);
-        }
+        // Retrieve partners sorted by name
+        $partners = $this->businessPartnerRepository->findBy(
+            ['company' => $id],        // Criteria to filter by company id
+            ['name' => 'ASC']          // Order by the 'name' field in ascending order
+        );
 
         $data = $this->serializer->serialize($partners, 'json', ['groups' => 'businesspartner:read']);
 
