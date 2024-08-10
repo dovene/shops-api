@@ -33,7 +33,7 @@ class BusinessPartner
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Serializer\Groups(groups: ['businesspartner:read'])]
+    #[Serializer\Groups(groups: ['businesspartner:read','event:read'])]
     private ?int $id;
 
     #[ORM\Column(length: 100, nullable: false)]

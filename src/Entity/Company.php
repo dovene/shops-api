@@ -35,11 +35,11 @@ class Company
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['company:read', 'user:read'])]
+    #[Groups(['company:read', 'user:read' ,'item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read'])]
     private ?int $id;
 
     #[ORM\Column(length: 100, unique: true)]
-    #[Groups(['company:read', 'company:write', 'user:read'])]
+    #[Groups(['company:read', 'company:write', 'user:read','item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read'])]
     #[Assert\NotBlank]
     private ?string $name = null;
 

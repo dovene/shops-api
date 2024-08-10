@@ -86,7 +86,6 @@ CREATE TABLE `business_partner` (
   `address` varchar(200) DEFAULT NULL,
   `city` varchar(45) DEFAULT NULL,
   `country` varchar(45) DEFAULT NULL,
-  `type` ENUM('CUSTOMER', 'SUPPLIER', 'GLOBAL') NOT NULL DEFAULT 'CUSTOMER',
   `company_id` int NOT NULL,
   `user_id` int NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,

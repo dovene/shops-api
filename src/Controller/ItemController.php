@@ -122,20 +122,31 @@ class ItemController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        $company = $this->companyRepository->findOneBy(['id' => $data['company_id']]);
+        if (!$company) {
+            return new JsonResponse(['status' => 0, 'message' => 'Company not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+        
+        $user = $this->userRepository->findOneBy(['id' => $data['user_id']]);
+        if (!$user) {
+            return new JsonResponse(['status' => 0, 'message' => 'User not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
 
-       /* if (isset($data['name']) && isset($data['company_id'])) {
-            $existingInstance = $this->itemRepository->findOneBy(['name' => $data['name'], 'company' => $data['company_id']]);
-            if ($existingInstance) {
-            return $this->json(['message' => 'Item name already exists for this company'], 400);
-            }
-        }*/
+        $category = $this->itemCategoryRepository->findOneBy(['id' => $data['item_category_id']]);
+        if (!$category) {
+            return new JsonResponse(['status' => 0, 'message' => 'Category not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+      
 
         $instance->setName($data['name']?? $instance->getName());    
         $instance->setReference($data['reference'] ?? $instance->getReference());
         $instance->setSellPrice($data['sell_price'] ?? $instance->getSellPrice());
         $instance->setBuyPrice($data['buy_price'] ?? $instance->getBuyPrice());
         $instance->setPicture($data['picture'] ?? $instance->getPicture());
-       
+        $instance->setCompany($company); 
+        $instance->setUser($user);
+        $instance->setItemCategory($category);
+        $instance->setCreatedAt(new \DateTime());
 
         $this->entityManager->flush();
 

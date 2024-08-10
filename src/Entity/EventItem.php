@@ -25,7 +25,7 @@ class EventItem
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    #[Serializer\Groups(groups: ['eventitem:read',])]
+    #[Serializer\Groups(groups: ['eventitem:read','event:read'])]
     private int $id;
 
     #[ORM\Column(type: "integer")]

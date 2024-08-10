@@ -36,11 +36,11 @@ class ItemCategory
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Serializer\Groups(groups: ['itemcategory:read'])]
+    #[Serializer\Groups(groups: ['itemcategory:read','item:read'])]
     private ?int $id;
 
     #[ORM\Column(length: 100, unique: true)]
-    #[Serializer\Groups(groups: ['itemcategory:read','itemcategory:write'])]
+    #[Serializer\Groups(groups: ['itemcategory:read','itemcategory:write', 'item:read'])]
     #[Assert\NotBlank]
     private ?string $name = null;
 

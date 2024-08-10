@@ -34,7 +34,7 @@ class EventType
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['eventtype:read'])]
+    #[Groups(['eventtype:read','event:read'])]
     private ?int $id;
 
     #[ORM\Column(length: 100, unique: true)]
