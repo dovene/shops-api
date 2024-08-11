@@ -214,4 +214,92 @@ class EventController extends AbstractController
 
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
+
+
+    #[Route('/dashboard/{companyId}', methods: ['GET'])]
+public function getDashboardData(int $companyId): JsonResponse
+{
+    // Define today's date range
+    $today = new \DateTime();
+    $today->setTime(0, 0);
+
+    // Define the current month's start
+    $firstDayOfMonth = new \DateTime('first day of this month');
+    $firstDayOfMonth->setTime(0, 0);
+
+    // Define the current year's start
+    $firstDayOfYear = new \DateTime('first day of January this year');
+    $firstDayOfYear->setTime(0, 0);
+
+    //get ventes id
+    $eventVentesId = $this->eventTypeRepository->findOneBy(['name' => 'VENTES'])->getId();
+
+    // Query for total stock quantity and values, filtering by company
+    $stockQuery = $this->itemRepository->createQueryBuilder('i')
+        ->select('SUM(i.quantity) as totalQuantity, SUM(i.buyPrice * i.quantity) as totalBuyValue, SUM(i.sellPrice * i.quantity) as totalSellValue')
+        ->where('i.company = :companyId')
+        ->setParameter('companyId', $companyId)
+        ->getQuery()
+        ->getSingleResult();
+
+    // Events today including count
+    $eventsTodayQuery = $this->eventRepository->createQueryBuilder('e')
+        ->select('COUNT(e.id) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
+        ->leftJoin('e.eventItems', 'ei')
+        ->where('e.eventType = :typeId AND e.eventDate >= :today AND e.company = :companyId')
+        ->setParameter('typeId', $eventVentesId)
+        ->setParameter('today', $today)
+        ->setParameter('companyId', $companyId)
+        ->getQuery()
+        ->getSingleResult();
+
+    // Events this month including count
+    $eventsMonthQuery = $this->eventRepository->createQueryBuilder('e')
+        ->select('COUNT(e.id) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
+        ->leftJoin('e.eventItems', 'ei')
+        ->where('e.eventType = :typeId AND e.eventDate >= :startMonth AND e.company = :companyId')
+        ->setParameter('typeId', $eventVentesId)
+        ->setParameter('startMonth', $firstDayOfMonth)
+        ->setParameter('companyId', $companyId)
+        ->getQuery()
+        ->getSingleResult();
+
+    // Events this year including count
+    $eventsYearQuery = $this->eventRepository->createQueryBuilder('e')
+        ->select('COUNT(e.id) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
+        ->leftJoin('e.eventItems', 'ei')
+        ->where('e.eventType = :typeId AND e.eventDate >= :startYear AND e.company = :companyId')
+        ->setParameter('typeId', $eventVentesId)
+        ->setParameter('startYear', $firstDayOfYear)
+        ->setParameter('companyId', $companyId)
+        ->getQuery()
+        ->getSingleResult();
+
+    // Prepare the dashboard data
+    $dashboardData = [
+        'StockToday' => [
+            'TotalQuantity' => $stockQuery['totalQuantity'],
+            'TotalValueBuy' => $stockQuery['totalBuyValue'],
+            'TotalValueSell' => $stockQuery['totalSellValue']
+        ],
+        'EventsToday' => [
+            'TotalSellQuantity' => $eventsTodayQuery['quantity'],
+            'TotalSellAmount' => $eventsTodayQuery['amount'],
+            'EventCount' => $eventsTodayQuery['eventCount']
+        ],
+        'EventsCurrentMonth' => [
+            'TotalSellQuantity' => $eventsMonthQuery['quantity'],
+            'TotalSellAmount' => $eventsMonthQuery['amount'],
+            'EventCount' => $eventsMonthQuery['eventCount']
+        ],
+        'EventsCurrentYear' => [
+            'TotalSellQuantity' => $eventsYearQuery['quantity'],
+            'TotalSellAmount' => $eventsYearQuery['amount'],
+            'EventCount' => $eventsYearQuery['eventCount']
+        ]
+    ];
+
+    return $this->json($dashboardData);
+}
+
 }
