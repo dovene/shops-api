@@ -88,7 +88,7 @@ class UserController extends AbstractController
         $user->setName($data['name']);
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($hashedPassword); // In a real app, make sure to hash the password!
-        $user->setRole($isFirstUser ? 'admin' : ($data['role'] ?? 'user'));
+        $user->setRole($isFirstUser ? 'owner' : ($data['role'] ?? 'user'));
         $user->setStatus($data['status'] ?? 'enabled');
         $user->setCompany($company);
 

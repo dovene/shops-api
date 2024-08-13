@@ -23,7 +23,7 @@ CREATE TABLE `company` (
   `devise` varchar(45),
   `address_details` varchar(200) DEFAULT NULL,
   `code` varchar(255) DEFAULT NULL,
-  `status` ENUM('DRAFT', 'ENABLED', 'DISABLED') NOT NULL DEFAULT 'DRAFT',
+  `status` varchar(50) NOT NULL DEFAULT 'DRAFT',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name_UNIQUE` (`name`)
@@ -37,7 +37,7 @@ CREATE TABLE `user` (
   `password` varchar(100) NOT NULL,
   `role` varchar(45) NOT NULL DEFAULT 'user',
   `company_id` int NOT NULL,
-  `status`  ENUM('ENABLED', 'DISABLED') NOT NULL DEFAULT 'ENABLED',
+  `status`  varchar(50) NOT NULL DEFAULT 'ENABLED',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email_UNIQUE` (`email`),
   FOREIGN KEY (`company_id`) REFERENCES `company` (`id`)
