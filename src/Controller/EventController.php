@@ -207,7 +207,7 @@ class EventController extends AbstractController
         // Retrieve events sorted by createdAt in descending order
         $events = $this->eventRepository->findBy(
             ['company' => $id],          // Criteria to filter by company id
-            ['createdAt' => 'DESC']      // Order by the 'createdAt' field in descending order
+            ['eventDate' => 'DESC']      // Order by the 'createdAt' field in descending order
         );
 
         $data = $this->serializer->serialize($events, 'json', ['groups' => 'event:read']);

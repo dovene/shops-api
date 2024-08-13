@@ -32,13 +32,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    #[Serializer\Groups(groups: ['user:read', 'company:read','item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read'])]
+    #[Serializer\Groups(groups: ['user:read', 'company:read','item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read', 'payment:read'])]
     private $id;
 
     #[ORM\Column(type: 'string', length: 45, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Email(message: 'Cet email n\'est pas valide')]
-    #[Serializer\Groups(groups: ['user:read','user:write', 'event:read','item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read'])]
+    #[Serializer\Groups(groups: ['user:read','user:write', 'event:read','item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read', 'payment:read'])]
     private $email;
 
     #[ORM\Column(type: 'string', length: 255)]
