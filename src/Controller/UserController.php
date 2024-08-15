@@ -15,6 +15,7 @@ use App\Repository\CompanyRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Entity\ItemCategory;
 use App\Entity\BusinessPartner;
+use Symfony\Component\Serializer\SerializerInterface;
 
 class UserController extends AbstractController
 {
@@ -22,17 +23,20 @@ class UserController extends AbstractController
     private $userRepository;
     private CompanyRepository $companyRepository;
     private $passwordHasher;
+    private $serializer;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
         CompanyRepository $companyRepository,
-        UserPasswordHasherInterface $passwordHasher
+        UserPasswordHasherInterface $passwordHasher,
+        SerializerInterface $serializer,
     ) {
         $this->entityManager = $entityManager;
         $this->userRepository = $userRepository;
         $this->companyRepository = $companyRepository;
         $this->passwordHasher = $passwordHasher;
+        $this->serializer = $serializer;
     }
 
     #[Route('/api/users', methods: ['GET'])]
@@ -130,14 +134,6 @@ class UserController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        /*if (isset($data['email'])) {
-            $existingUser = $this->userRepository->findOneBy(['email' => $data['email']]);
-            if ($existingUser && $existingUser->getId() !== $id) {
-                return $this->json(['message' => 'Email already exists'], 400);
-            }
-            $user->setEmail($data['email']);
-        }*/
-
         if (isset($data['name'])) {
             $user->setName($data['name']);
         }
@@ -206,5 +202,19 @@ class UserController extends AbstractController
         }
 
         return $this->json($user);
+    }
+
+    #[Route('/api/users/company/{id}', methods: ['GET'])]
+    public function findUsersByCompany(int $id): JsonResponse
+    {
+        // Retrieve partners sorted by name
+        $instances = $this->userRepository->findBy(
+            ['company' => $id],        // Criteria to filter by company id
+            ['name' => 'ASC']          // Order by the 'name' field in ascending order
+        );
+
+        $data = $this->serializer->serialize($instances, 'json', ['groups' => 'user:read']);
+
+        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
 }

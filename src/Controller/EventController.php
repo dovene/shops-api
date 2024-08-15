@@ -174,7 +174,7 @@ class EventController extends AbstractController
         }
 
         // if the status is already cancelled not updated needed
-        if (strtolower($event->getStatus()) === 'cancelled' || strtolower($event->getStatus()) === 'warning') {
+        if (strtolower($event->getStatus()) === 'cancelled') {
             return $this->json(['message' => 'Invalid status'], JsonResponse::HTTP_BAD_REQUEST);
         }
         
