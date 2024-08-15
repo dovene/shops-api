@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Serializer\SerializerInterface;
+use App\Entity\Payment;
 
 #[Route('/api/events')]
 class EventController extends AbstractController
@@ -172,8 +173,14 @@ class EventController extends AbstractController
             return $this->json(['message' => 'Event not found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
+        // if the status is already cancelled not updated needed
+        if (strtolower($event->getStatus()) === 'cancelled' || strtolower($event->getStatus()) === 'warning') {
+            return $this->json(['message' => 'Invalid status'], JsonResponse::HTTP_BAD_REQUEST);
+        }
+        
+
         // Check if we are cancelling the event and handle rollback
-        if ($data['status'] === 'CANCELLED') {
+        if (strtolower($data['status']) === 'cancelled') {
             // Rollback the item quantities
             $eventItems = $event->getEventItems();
             $eventType = $event->getEventType();
@@ -216,7 +223,7 @@ class EventController extends AbstractController
     }
 
 
-    #[Route('/dashboard/{companyId}', methods: ['GET'])]
+#[Route('/dashboard/{companyId}', methods: ['GET'])]
 public function getDashboardData(int $companyId): JsonResponse
 {
     // Define today's date range
@@ -231,6 +238,25 @@ public function getDashboardData(int $companyId): JsonResponse
     $firstDayOfYear = new \DateTime('first day of January this year');
     $firstDayOfYear->setTime(0, 0);
 
+    $endToday = new \DateTime();
+    $endToday->setTime(23, 59, 59);
+    
+    // Define the current month's start
+    $endDayOfMonth = new \DateTime('last day of this month');
+    $endDayOfMonth->setTime(23, 59, 59);
+
+    // Define the current year's start
+    $endDayOfYear = new \DateTime('last day of December this year');
+    $endDayOfYear->setTime(23, 59, 59);
+    $mock = [
+        'endDayOfYear'=>$endDayOfYear,
+        'lastDayOfMonth'=>$endDayOfMonth,
+        'endToday'=>$endToday,
+        'firstDayOfYear'=>$firstDayOfYear,
+        'firstDayOfMonth'=>$firstDayOfMonth,
+        'today'=>$today,
+    ];
+
     //get ventes id
     $eventVentesId = $this->eventTypeRepository->findOneBy(['name' => 'VENTES'])->getId();
 
@@ -242,13 +268,26 @@ public function getDashboardData(int $companyId): JsonResponse
         ->getQuery()
         ->getSingleResult();
 
+    
+    // Sum of payments today
+    $paymentsToday = $this->getPaymentsSum($companyId, $today, $endToday, $eventVentesId);
+
+    // Sum of payments this month
+    $paymentsMonth = $this->getPaymentsSum($companyId, $firstDayOfMonth, $endDayOfMonth, $eventVentesId);
+
+    // Sum of payments this year
+    $paymentsYear = $this->getPaymentsSum($companyId, $firstDayOfYear, $endDayOfYear,$eventVentesId);
+
+
     // Events today including count
     $eventsTodayQuery = $this->eventRepository->createQueryBuilder('e')
         ->select('COUNT(e.id) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
         ->leftJoin('e.eventItems', 'ei')
-        ->where('e.eventType = :typeId AND e.eventDate >= :today AND e.company = :companyId')
+        ->where('e.eventType = :typeId AND e.company = :companyId')
+        ->andWhere('e.eventDate BETWEEN :start AND :end')
+        ->setParameter('start', $today)
+        ->setParameter('end', $endToday)
         ->setParameter('typeId', $eventVentesId)
-        ->setParameter('today', $today)
         ->setParameter('companyId', $companyId)
         ->getQuery()
         ->getSingleResult();
@@ -257,9 +296,11 @@ public function getDashboardData(int $companyId): JsonResponse
     $eventsMonthQuery = $this->eventRepository->createQueryBuilder('e')
         ->select('COUNT(e.id) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
         ->leftJoin('e.eventItems', 'ei')
-        ->where('e.eventType = :typeId AND e.eventDate >= :startMonth AND e.company = :companyId')
+        ->where('e.eventType = :typeId AND e.company = :companyId')
+        ->andWhere('e.eventDate BETWEEN :start AND :end')
+        ->setParameter('start', $firstDayOfMonth)
+        ->setParameter('end', $endDayOfMonth)
         ->setParameter('typeId', $eventVentesId)
-        ->setParameter('startMonth', $firstDayOfMonth)
         ->setParameter('companyId', $companyId)
         ->getQuery()
         ->getSingleResult();
@@ -268,9 +309,11 @@ public function getDashboardData(int $companyId): JsonResponse
     $eventsYearQuery = $this->eventRepository->createQueryBuilder('e')
         ->select('COUNT(e.id) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
         ->leftJoin('e.eventItems', 'ei')
-        ->where('e.eventType = :typeId AND e.eventDate >= :startYear AND e.company = :companyId')
+        ->where('e.eventType = :typeId AND e.company = :companyId')
+        ->andWhere('e.eventDate BETWEEN :start AND :end')
+        ->setParameter('start', $firstDayOfYear)
+        ->setParameter('end', $endDayOfYear)
         ->setParameter('typeId', $eventVentesId)
-        ->setParameter('startYear', $firstDayOfYear)
         ->setParameter('companyId', $companyId)
         ->getQuery()
         ->getSingleResult();
@@ -296,10 +339,44 @@ public function getDashboardData(int $companyId): JsonResponse
             'TotalSellQuantity' => $eventsYearQuery['quantity'],
             'TotalSellAmount' => $eventsYearQuery['amount'],
             'EventCount' => $eventsYearQuery['eventCount']
-        ]
+        ],
+        'SellPayments' => [
+            'TotalPaymentToday' => $paymentsToday['totalPayments'],
+            'TotalPaymentMonth' => $paymentsMonth['totalPayments'],
+            'TotalPaymentYear' => $paymentsYear['totalPayments'],
+            'PaymentCount' => $paymentsYear['paymentCount']
+        ],
     ];
 
     return $this->json($dashboardData);
 }
+
+
+
+private function getPaymentsSum(int $companyId, \DateTime $startDate, \DateTime $endDate, int $eventTypeId): array
+{
+
+    $entityManager = $this->entityManager;  // Use the injected EntityManager
+
+    $query = $entityManager->createQueryBuilder()
+        ->select('COUNT(p.id) as paymentCount, SUM(p.amount) as totalPayments')
+        ->from(Payment::class, 'p')
+        ->join('p.event', 'e')
+        ->where('e.company = :companyId AND p.paymentDate BETWEEN :start AND :end')
+        ->andWhere('e.eventType = :eventType')  // Filter for event type name 'VENTES'
+        ->setParameter('companyId', $companyId)
+        ->setParameter('start', $startDate)
+        ->setParameter('end', $endDate)
+        ->setParameter('eventType',  $eventTypeId)  // Set the specific event type id
+        ->getQuery();
+
+    $result = $query->getSingleResult();
+
+    return [
+        'totalPayments' => $result['totalPayments'] ?? 0,
+        'paymentCount' => $result['paymentCount'] ?? 0
+    ];
+}
+
 
 }

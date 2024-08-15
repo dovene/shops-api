@@ -115,8 +115,12 @@ class PaymentController extends AbstractController
 
       
         $this->entityManager->persist($instance);
-        $this->entityManager->flush();
+       // $this->entityManager->flush();
 
+
+        //update event totalPayment
+        $event->setTotalPayment($instance->getAmount() + $event->getTotalPayment());
+        $this->entityManager->flush();
      
         $data = $this->serializer->serialize($instance, 'json', ['groups' => 'payment:read']);
         return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);

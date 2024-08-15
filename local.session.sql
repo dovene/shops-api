@@ -157,6 +157,13 @@ CREATE TABLE `payment_type` (
   UNIQUE KEY `name_UNIQUE` (`name`)
 );
 
+INSERT INTO payment_type (name) VALUES ("ESPECES");
+INSERT INTO payment_type (name) VALUES ("VIREMENT");
+INSERT INTO payment_type (name) VALUES ("MOBILE MONEY");
+INSERT INTO payment_type (name) VALUES ("CB");
+INSERT INTO payment_type (name) VALUES ("TMONEY");
+INSERT INTO payment_type (name) VALUES ("FLOOZ");
+
 CREATE TABLE `payment` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `amount` double DEFAULT NULL,
@@ -170,3 +177,6 @@ CREATE TABLE `payment` (
   FOREIGN KEY (`payment_type_id`) REFERENCES `payment_type` (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ;
+
+ALTER TABLE event
+ADD COLUMN total_payment DOUBLE DEFAULT NULL;

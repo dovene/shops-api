@@ -90,6 +90,10 @@ class Event
     #[ORM\OneToMany(mappedBy: 'event', targetEntity: EventItem::class, cascade: ['persist', 'remove'])]
     #[Serializer\Groups(groups: ['event:read'])]
     private $eventItems;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    #[Serializer\Groups(groups: ['event:read','event:write'])]
+    private $totalPayment;
    
     public function __construct()
     {
@@ -250,6 +254,18 @@ class Event
             $this->eventItems[] = $eventItem;
             $eventItem->setEvent($this);
         }
+
+        return $this;
+    }
+
+    public function getTotalPayment(): ?float
+    {
+        return $this->totalPayment;
+    }
+
+    public function setTotalPayment(?float $totalPayment): self
+    {
+        $this->totalPayment = $totalPayment;
 
         return $this;
     }
