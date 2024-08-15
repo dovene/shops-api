@@ -106,7 +106,7 @@ class PaymentController extends AbstractController
         }
 
         $instance = new Payment();
-        $instance->setPaymentDate(new \DateTime($data['event_date'] ?? 'now'));
+        $instance->setPaymentDate(new \DateTime($data['payment_date'] ?? 'now'));
         $instance->setAmount($data['amount'] ?? null);
         $instance->setUser($user);
         $instance->setPaymentType($paymentType);
