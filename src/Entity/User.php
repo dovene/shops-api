@@ -42,7 +42,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private $email;
 
     #[ORM\Column(type: 'string', length: 255)]
-    #[Serializer\Groups(groups: ['user:read','user:write', 'event:read','item:read', 'itemcategory:read'])]
+    #[Serializer\Groups(groups: ['user:read','user:write', 'event:read','item:read', 'itemcategory:read','payment:read'])]
     private $name;
 
     #[ORM\Column(type: 'string', length: 100)]
