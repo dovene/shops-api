@@ -200,6 +200,10 @@ class UserController extends AbstractController
         if (!$this->passwordHasher->isPasswordValid($user, $data['password'])) {
             return $this->json(['status' => 0, 'message' => 'Invalid password'], JsonResponse::HTTP_UNAUTHORIZED);
         }
+        
+        if ($user->getStatus() != 'enabled') {
+            return $this->json(['status' => 0, 'message' => 'This user cannot login - status not enabled'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
 
         return $this->json($user);
     }
@@ -216,5 +220,24 @@ class UserController extends AbstractController
         $data = $this->serializer->serialize($instances, 'json', ['groups' => 'user:read']);
 
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
+    }
+
+
+    #[Route('/api/users/anonymize/{id}', methods: ['PATCH'])]
+    public function anonymize(int $id, Request $request): JsonResponse
+    {
+        $user = $this->userRepository->find($id);
+
+        if (!$user) {
+            return $this->json(['message' => 'User not found'], 404);
+        }
+
+        $user->setStatus('deleted');
+        $user->setEmail($user->getEmail().'-DELETED');
+        $user->setName($user->getName().'-DELETED');
+
+        $this->entityManager->flush();
+
+        return $this->json($user);
     }
 }
