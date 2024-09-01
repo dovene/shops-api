@@ -17,6 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Serializer\SerializerInterface;
 use App\Entity\Payment;
+use App\Repository\PaymentTypeRepository;
 
 #[Route('/api/events')]
 class EventController extends AbstractController
@@ -29,6 +30,8 @@ class EventController extends AbstractController
     private EventTypeRepository $eventTypeRepository;
     private UserRepository $userRepository;
     private SerializerInterface $serializer;
+    private PaymentTypeRepository $paymentTypeRepository;
+
     public function __construct(
         EntityManagerInterface $entityManager,
         EventRepository $eventRepository,
@@ -37,7 +40,8 @@ class EventController extends AbstractController
         CompanyRepository $companyRepository,
         EventTypeRepository $eventTypeRepository,
         UserRepository $userRepository,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        PaymentTypeRepository $paymentTypeRepository
     ) {
         $this->entityManager = $entityManager;
         $this->eventRepository = $eventRepository;
@@ -47,6 +51,7 @@ class EventController extends AbstractController
         $this->eventTypeRepository = $eventTypeRepository;
         $this->userRepository = $userRepository;
         $this->serializer = $serializer;
+        $this->paymentTypeRepository = $paymentTypeRepository;
     }
 
     #[Route('', methods: ['GET'])]
@@ -147,6 +152,31 @@ class EventController extends AbstractController
         $event->setTotalQuantity($totalQuantity);
         $event->setTotalPrice($totalPrice);
 
+        // update totalPrice if tva rate was provided
+        if (isset($data['tva']) && $data['tva'] != 0)  {
+            $totalPrice = $event->getTotalPrice() + ($event->getTotalPrice() * $event->getTva()/100);
+            $event->setTotalPrice($totalPrice);
+        }
+
+
+         // create payment if instant payment was set
+         if (isset($data['is_instant_payment_done'])) {
+            $is_instant_payment_done = $data['is_instant_payment_done'];
+            if ($is_instant_payment_done === true) {
+                //get ventes id
+                $paymentType = $this->paymentTypeRepository->findOneBy(['name' => 'ESPECES']);
+                $payment = new Payment();
+                $payment->setPaymentDate(new \DateTime());
+                $payment->setAmount($event->getTotalPrice());
+                $payment->setUser($user);
+                $payment->setPaymentType($paymentType);
+                $payment->setEvent($event);
+                $payment->setCreatedAt(new \DateTime()); 
+                $event->setTotalPayment($event->getTotalPrice());
+                $this->entityManager->persist($payment);
+            }
+        }
+
         // Finally, flush all changes
         $this->entityManager->flush();
 
@@ -229,6 +259,7 @@ public function getDashboardData(int $companyId): JsonResponse
     // Define today's date range
     $today = new \DateTime();
     $today->setTime(0, 0);
+    $validated = 'validated'; 
 
     // Define the current month's start
     $firstDayOfMonth = new \DateTime('first day of this month');
@@ -285,10 +316,12 @@ public function getDashboardData(int $companyId): JsonResponse
         ->leftJoin('e.eventItems', 'ei')
         ->where('e.eventType = :typeId AND e.company = :companyId')
         ->andWhere('e.eventDate BETWEEN :start AND :end')
+        ->andWhere('e.status = :status')
         ->setParameter('start', $today)
         ->setParameter('end', $endToday)
         ->setParameter('typeId', $eventVentesId)
         ->setParameter('companyId', $companyId)
+        ->setParameter('status', $validated)
         ->getQuery()
         ->getSingleResult();
 
@@ -298,10 +331,12 @@ public function getDashboardData(int $companyId): JsonResponse
         ->leftJoin('e.eventItems', 'ei')
         ->where('e.eventType = :typeId AND e.company = :companyId')
         ->andWhere('e.eventDate BETWEEN :start AND :end')
+        ->andWhere('e.status = :status')
         ->setParameter('start', $firstDayOfMonth)
         ->setParameter('end', $endDayOfMonth)
         ->setParameter('typeId', $eventVentesId)
         ->setParameter('companyId', $companyId)
+        ->setParameter('status', $validated)
         ->getQuery()
         ->getSingleResult();
 
@@ -311,10 +346,12 @@ public function getDashboardData(int $companyId): JsonResponse
         ->leftJoin('e.eventItems', 'ei')
         ->where('e.eventType = :typeId AND e.company = :companyId')
         ->andWhere('e.eventDate BETWEEN :start AND :end')
+        ->andWhere('e.status = :status')
         ->setParameter('start', $firstDayOfYear)
         ->setParameter('end', $endDayOfYear)
         ->setParameter('typeId', $eventVentesId)
         ->setParameter('companyId', $companyId)
+        ->setParameter('status', $validated)
         ->getQuery()
         ->getSingleResult();
 
@@ -355,6 +392,7 @@ public function getDashboardData(int $companyId): JsonResponse
 
 private function getPaymentsSum(int $companyId, \DateTime $startDate, \DateTime $endDate, int $eventTypeId): array
 {
+    $validated = 'validated';
 
     $entityManager = $this->entityManager;  // Use the injected EntityManager
 
@@ -363,11 +401,13 @@ private function getPaymentsSum(int $companyId, \DateTime $startDate, \DateTime 
         ->from(Payment::class, 'p')
         ->join('p.event', 'e')
         ->where('e.company = :companyId AND p.paymentDate BETWEEN :start AND :end')
+        ->andWhere('e.status = :status')
         ->andWhere('e.eventType = :eventType')  // Filter for event type name 'VENTES'
         ->setParameter('companyId', $companyId)
         ->setParameter('start', $startDate)
         ->setParameter('end', $endDate)
         ->setParameter('eventType',  $eventTypeId)  // Set the specific event type id
+        ->setParameter('status', $validated)
         ->getQuery();
 
     $result = $query->getSingleResult();

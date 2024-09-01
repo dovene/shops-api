@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Repository\SubscriptionRepository;
+use App\Entity\Subscription;
 
 #[Route('/api/companies')]
 class CompanyController extends AbstractController
@@ -19,13 +21,17 @@ class CompanyController extends AbstractController
     private $serializer;
     private ValidatorInterface $validator;
     private CompanyRepository $companyRepository;
+    private SubscriptionRepository $subscriptionRepository;
 
-    public function __construct(EntityManagerInterface $entityManager, SerializerInterface $serializer, ValidatorInterface $validator, CompanyRepository $companyRepository)
+    public function __construct(EntityManagerInterface $entityManager, SerializerInterface $serializer, 
+    ValidatorInterface $validator, CompanyRepository $companyRepository,  
+    SubscriptionRepository $subscriptionRepository,)
     {
         $this->entityManager = $entityManager;
         $this->serializer = $serializer;
         $this->validator = $validator;
         $this->companyRepository = $companyRepository;
+        $this->subscriptionRepository = $subscriptionRepository;
     }
 
     #[Route('', methods: ['GET'])]
@@ -71,6 +77,21 @@ class CompanyController extends AbstractController
         }
 
         $this->entityManager->persist($company);
+
+        
+        // create subscription
+        $subscription = new Subscription();
+        $debutDate = new \DateTime($data['debut'] ?? 'now');
+        $subscription->setDebut($debutDate);
+        // Add 6 months to the debut date for the end date
+        $endDate = (clone $debutDate)->modify('+6 months');
+        $subscription->setEnd($endDate);
+        $subscription->setType($data['type'] ?? 'standard');
+        $subscription->setStatus($data['status'] ?? 'enabled');
+        $subscription->setCompany($company);
+        $subscription->setCreatedAt(new \DateTime()); // Set creation date as now
+        $this->entityManager->persist($subscription);
+
         $this->entityManager->flush();
 
         $data = $this->serializer->serialize($company, 'json', ['groups' => 'company:read']);

@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS `business_partner`;
 DROP TABLE IF EXISTS `user`;
 DROP TABLE IF EXISTS `company`;
 DROP TABLE IF EXISTS `payment_type`;
+DROP TABLE IF EXISTS `subscription`;
 
 CREATE TABLE `company` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -180,3 +181,22 @@ CREATE TABLE `payment` (
 
 ALTER TABLE event
 ADD COLUMN total_payment DOUBLE DEFAULT NULL;
+
+
+CREATE TABLE `subscription` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `debut` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `end` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `company_id` BIGINT NOT NULL,
+  `type`  varchar(50) NOT NULL DEFAULT 'standard',
+  `status`  varchar(50) NOT NULL DEFAULT 'enabled',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`company_id`) REFERENCES `company` (`id`)
+);
+
+ALTER TABLE company
+ADD COLUMN currency varchar(25) DEFAULT NULL;
+
+ALTER TABLE company
+DROP COLUMN devise;

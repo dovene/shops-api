@@ -35,11 +35,11 @@ class Company
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['company:read', 'user:read' ,'item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read'])]
+    #[Groups(['company:read', 'user:read' ,'item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read', 'subscription:read'])]
     private ?int $id;
 
     #[ORM\Column(length: 100, unique: true)]
-    #[Groups(['company:read', 'company:write', 'user:read','item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read'])]
+    #[Groups(['company:read', 'company:write', 'user:read','item:read', 'itemcategory:read', 'businesspartner:read', 'event:read', 'eventtype:read', 'subscription:read'])]
     #[Assert\NotBlank]
     private ?string $name = null;
 
@@ -76,6 +76,10 @@ class Company
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['company:read', 'company:write'])]
     private ?string $code = null;
+
+    #[ORM\Column(length: 25, nullable: true)]
+    #[Groups(['company:read', 'company:write'])]
+    private ?string $currency = null;
 
     // Getters and Setters
 
@@ -188,6 +192,18 @@ class Company
     public function setCode(?string $code): self
     {
         $this->code = $code;
+
+        return $this;
+    }
+
+    public function getCurrency(): ?string
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(?string $code): self
+    {
+        $this->currency;
 
         return $this;
     }
