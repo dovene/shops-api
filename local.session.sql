@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS `user`;
 DROP TABLE IF EXISTS `company`;
 DROP TABLE IF EXISTS `payment_type`;
 DROP TABLE IF EXISTS `subscription`;
+DROP TABLE IF EXISTS `app_minimal_version`;
 
 CREATE TABLE `company` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -201,4 +202,14 @@ ADD COLUMN currency varchar(25) DEFAULT NULL;
 ALTER TABLE company
 DROP COLUMN devise;
 
-INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("DEVIS",2);
+INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("DEVIS",2, 1);
+
+CREATE TABLE `app_minimal_version` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `app_id` varchar(50) DEFAULT NULL,
+  `app_version` varchar(50) DEFAULT NULL,
+  `app_os` varchar(50) DEFAULT NULL,
+  `app_name` varchar(50) DEFAULT NULL,
+  `is_minimal_version_mandatory` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
+); 
