@@ -141,7 +141,7 @@ class EventController extends AbstractController
             // Update item quantity based on event type
             if ($eventType->getIsAnIncreaseStockType() == 1) {
                 $item->setQuantity($item->getQuantity() + $eventItem->getQuantity());
-            } else {
+            } else if ($eventType->getIsAnIncreaseStockType() == 0) {
                 $item->setQuantity($item->getQuantity() - $eventItem->getQuantity());
             }
 
@@ -418,5 +418,139 @@ private function getPaymentsSum(int $companyId, \DateTime $startDate, \DateTime 
     ];
 }
 
+#[Route('/unpaid/{companyId}', methods: ['GET'])]
+public function getUnpaidEvents(Request $request, int $companyId): JsonResponse
+{
+    $startDate = $request->query->get('startDate');
+    $endDate = $request->query->get('endDate');
+    $eventTypeName = $request->query->get('eventType');
+    $partnerId = $request->query->get('partnerId');
+   
+    $validated = 'validated';
+    
+    // Convert dates from string to DateTime objects
+    $startDate = new \DateTime($startDate);
+    $endDate = new \DateTime($endDate);
+
+    // Fetch the event type by name
+    $eventType = $this->eventTypeRepository->findOneBy(['name' => $eventTypeName]);
+
+    // Query for events that are unpaid, including business partner and event type names
+    $query = $this->entityManager->createQueryBuilder()
+        ->select([
+            'e',
+            'SUM(p.amount) AS totalPaid',
+            'bp.name AS businessPartnerName', // Add business partner name
+            'et.name AS eventTypeName'        // Add event type name
+        ])
+        ->from(Event::class, 'e')
+        ->leftJoin('e.payments', 'p')
+        ->leftJoin('e.businessPartner', 'bp')
+        ->leftJoin('e.eventType', 'et')
+        ->groupBy('e.id')
+        ->having('SUM(p.amount) < e.totalPrice OR SUM(p.amount) IS NULL')
+        ->where('e.company = :companyId')
+        ->andWhere('e.eventDate BETWEEN :startDate AND :endDate')
+        ->andWhere('e.status = :status')
+        ->setParameter('status', $validated)
+        ->setParameter('companyId', $companyId)
+        ->setParameter('startDate', $startDate)
+        ->setParameter('endDate', $endDate);
+    
+    // Optional filtering by partner
+   
+    // partner filter ain't working we comment it for now will fix later !
+    // the report will work for all
+    if ($partnerId) {
+       $query->andWhere('e.businessPartner = :partnerId')
+       ->setParameter('partnerId', $partnerId);
+    }
+
+    if ($eventType) {
+        $query->andWhere('et = :eventType')
+        ->setParameter('eventType', $eventType);
+     }
+
+    $unpaidEvents = $query->getQuery()->getResult();
+
+    // Process results to include total paid amount and additional details
+    $results = array_map(function ($result) {
+        /** @var Event $event */
+        $event = $result[0]; // This is the Event object
+        return [
+            'id' => $event->getId(),
+            'eventDate' => $event->getEventDate()->format('Y-m-d H:i:s'),
+            'totalPrice' => $event->getTotalPrice(),
+            'totalPaid' => $result['totalPaid'] ?? 0,
+            'status' => $event->getStatus(),
+            'businessPartnerName' => $result['businessPartnerName'], // Add this line
+            'eventTypeName' => $result['eventTypeName'], // Add this line
+        ];
+    }, $unpaidEvents);
+
+    return $this->json($results, JsonResponse::HTTP_OK);
+}
+
+
+#[Route('/financial-summary/{companyId}', methods: ['GET'])]
+public function getFinancialSummaryByEventType(Request $request, int $companyId): JsonResponse
+{
+    $startDate = $request->query->get('startDate');
+    $endDate = $request->query->get('endDate');
+    $partnerId = $request->query->get('partnerId');
+
+    $startDate = new \DateTime($startDate);
+    $endDate = new \DateTime($endDate);
+    
+    $validated = 'validated';
+
+    // Start building the query
+    $qb = $this->entityManager->createQueryBuilder();
+
+    // Select and sum based on conditions for 'VENTES' and 'ACHATS'
+    $qb->select([
+        'SUM(CASE WHEN et.name = \'VENTES\' THEN e.totalPrice ELSE 0 END) AS sumVentes',
+        'SUM(CASE WHEN et.name = \'ACHATS\' THEN e.totalPrice ELSE 0 END) AS sumAchats',
+        'SUM(CASE WHEN et.name = \'VENTES\' THEN p.amount ELSE 0 END) AS sumPaidVentes',
+        'SUM(CASE WHEN et.name = \'ACHATS\' THEN p.amount ELSE 0 END) AS sumPaidAchats'
+    ])
+    ->from(Event::class, 'e')
+    ->leftJoin('e.eventType', 'et')
+    ->leftJoin('e.payments', 'p')
+    ->where('e.company = :companyId')
+    ->andWhere('e.eventDate BETWEEN :startDate AND :endDate')
+    ->andWhere('e.status = :status')
+    ->setParameter('status', $validated)
+    ->setParameter('companyId', $companyId)
+    ->setParameter('startDate', $startDate)
+    ->setParameter('endDate', $endDate);
+
+    // Optional filtering by partner
+    if ($partnerId) {
+        $qb->andWhere('e.businessPartner = :partnerId')
+           ->setParameter('partnerId', $partnerId);
+    }
+
+    // Get the result
+    $result = $qb->getQuery()->getSingleResult();
+
+    // Calculate the difference between sumAchats and sumVentes
+    $difference = $result['sumVentes'] - $result['sumAchats'];
+
+    // Calculate the difference between sumAchats and sumVentes
+    $paidDifference = $result['sumPaidVentes'] - $result['sumPaidAchats'];
+
+    // Construct the response
+    $data = [
+        'sumVentes' => $result['sumVentes'],
+        'sumAchats' => $result['sumAchats'],
+        'difference' => $difference,
+        'sumPaidVentes' => $result['sumPaidVentes'],
+        'sumPaidAchats' => $result['sumPaidAchats'],
+        'paidDifference' => $paidDifference,
+    ];
+
+    return $this->json($data);
+}
 
 }

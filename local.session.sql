@@ -200,3 +200,5 @@ ADD COLUMN currency varchar(25) DEFAULT NULL;
 
 ALTER TABLE company
 DROP COLUMN devise;
+
+INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("DEVIS",2);

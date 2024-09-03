@@ -94,6 +94,10 @@ class Event
     #[ORM\Column(type: 'float', nullable: true)]
     #[Serializer\Groups(groups: ['event:read','event:write'])]
     private $totalPayment;
+
+    #[ORM\OneToMany(mappedBy: 'event', targetEntity: Payment::class, cascade: ['persist', 'remove'])]
+    #[Serializer\Groups(groups: ['event:read'])]
+    private $payments;
    
     public function __construct()
     {
