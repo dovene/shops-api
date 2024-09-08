@@ -201,9 +201,9 @@ class Company
         return $this->currency;
     }
 
-    public function setCurrency(?string $code): self
+    public function setCurrency(?string $currency): self
     {
-        $this->currency;
+        $this->currency = $currency;
 
         return $this;
     }
