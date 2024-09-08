@@ -288,6 +288,10 @@ public function getDashboardData(int $companyId): JsonResponse
         'today'=>$today,
     ];
 
+    // Here, call the getMonthlySales method directly and integrate its results
+    $monthlySalesResponse = $this->getMonthlySales($companyId);
+    $monthlySalesData = json_decode($monthlySalesResponse->getContent(), true);
+
     //get ventes id
     $eventVentesId = $this->eventTypeRepository->findOneBy(['name' => 'VENTES'])->getId();
 
@@ -383,6 +387,7 @@ public function getDashboardData(int $companyId): JsonResponse
             'TotalPaymentYear' => $paymentsYear['totalPayments'],
             'PaymentCount' => $paymentsYear['paymentCount']
         ],
+        'MonthlySales' => $monthlySalesData, // Adding the new monthly sales data
     ];
 
     return $this->json($dashboardData);
@@ -551,6 +556,87 @@ public function getFinancialSummaryByEventType(Request $request, int $companyId)
     ];
 
     return $this->json($data);
+}#[Route('/api/events/monthly-sales/{companyId}', methods: ['GET'])]
+public function getMonthlySales(int $companyId): JsonResponse
+{
+    $currentDate = new \DateTime();
+    $endDate = new \DateTime('last day of this month');
+    $startDate = (clone $currentDate)->modify('-11 months')->modify('first day of this month');
+
+    $qb = $this->entityManager->createQueryBuilder();
+    
+    $validated = 'validated';
+
+    $qb->select([
+            'SUBSTRING(e.eventDate, 1, 7) AS monthYear', // YYYY-MM format
+            'SUM(e.totalPrice) AS totalSales'
+        ])
+        ->from(Event::class, 'e')
+        ->join('e.eventType', 'et')
+        ->where('et.name = :typeName')
+        ->andWhere('e.company = :companyId')
+        ->andWhere('e.eventDate BETWEEN :startDate AND :endDate')
+        ->andWhere('e.status = :status')
+        ->groupBy('monthYear')
+        ->orderBy('monthYear', 'ASC')
+        ->setParameter('typeName', 'VENTES')
+        ->setParameter('companyId', $companyId)
+        ->setParameter('status', $validated)
+        ->setParameter('startDate', $startDate->format('Y-m-d'))
+        ->setParameter('endDate', $endDate->format('Y-m-d'));
+
+    $results = $qb->getQuery()->getScalarResult();
+    $formattedResults = $this->initializeMonthlyResults($startDate, 12);
+
+    // Update the initialized array with actual results
+    foreach ($results as $result) {
+        $date = \DateTime::createFromFormat('Y-m', $result['monthYear']);
+        $formattedMonth = $this->getFrenchMonthAbbreviation($date->format('m')); // Use a custom function to map month number to French abbreviation
+        foreach ($formattedResults as &$monthlyResult) {
+            if ($monthlyResult['month'] === $formattedMonth) {
+                $monthlyResult['sales'] = (float) $result['totalSales'];
+                break;
+            }
+        }
+    }
+
+    return $this->json($formattedResults);
 }
+
+private function initializeMonthlyResults(\DateTime $startDate, int $months = 12): array
+{
+    $results = [];
+    $date = clone $startDate;
+
+    for ($i = 0; $i < $months; $i++) {
+        $results[] = [
+            'month' => $this->getFrenchMonthAbbreviation($date->format('m')),
+            'sales' => 0
+        ];
+        $date->modify('+1 month');
+    }
+
+    return $results;
+}
+
+private function getFrenchMonthAbbreviation($monthNumber): string
+{
+    $map = [
+        '01' => 'Jan.',
+        '02' => 'Fév.',
+        '03' => 'Mar.',
+        '04' => 'Avr.',
+        '05' => 'Mai',
+        '06' => 'Juin',
+        '07' => 'Juil.',
+        '08' => 'Aoû.',
+        '09' => 'Sep.',
+        '10' => 'Oct.',
+        '11' => 'Nov.',
+        '12' => 'Déc.'
+    ];
+    return $map[$monthNumber] ?? 'N/A';
+}
+
 
 }
