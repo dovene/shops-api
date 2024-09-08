@@ -42,27 +42,27 @@ class BusinessPartner
     private ?string $name = null;
 
     #[ORM\Column(length: 45, nullable: true)]
-    #[Groups(['businesspartner:read', 'businesspartner:write'])]
+    #[Groups(['businesspartner:read', 'businesspartner:write', 'event:read'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 45, nullable: true)]
-    #[Groups(['businesspartner:read', 'businesspartner:write'])]
+    #[Groups(['businesspartner:read', 'businesspartner:write', 'event:read'])]
     private ?string $city = null;
 
     #[ORM\Column(length: 45, nullable: true)]
-    #[Groups(['company:read', 'company:write'])]
+    #[Groups(['company:read', 'company:write', 'event:read'])]
     private ?string $tel = null;
 
     #[ORM\Column(length: 45, nullable: true)]
-    #[Groups(['businesspartner:read', 'businesspartner:write'])]
+    #[Groups(['businesspartner:read', 'businesspartner:write', 'event:read'])]
     private ?string $country = null;
 
     #[ORM\Column(length: 45, nullable: true)]
-    #[Groups(['businesspartner:read', 'businesspartner:write'])]
+    #[Groups(['businesspartner:read', 'businesspartner:write', 'event:read'])]
     private ?string $type = null;
 
     #[ORM\Column(length: 200, nullable: true)]
-    #[Groups(['businesspartner:read', 'businesspartner:write'])]
+    #[Groups(['businesspartner:read', 'businesspartner:write', 'event:read'])]
     private ?string $address = null;
 
     #[ORM\ManyToOne(targetEntity: Company::class)]
