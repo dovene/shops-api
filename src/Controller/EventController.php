@@ -316,7 +316,7 @@ public function getDashboardData(int $companyId): JsonResponse
 
     // Events today including count
     $eventsTodayQuery = $this->eventRepository->createQueryBuilder('e')
-        ->select('COUNT(distinct(e.id)) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
+        ->select('COUNT(distinct(e.id)) as eventCount,  SUM(DISTINCT e.totalPrice) as amount, SUM(ei.quantity) as quantity')
         ->leftJoin('e.eventItems', 'ei')
         ->where('e.eventType = :typeId AND e.company = :companyId')
         ->andWhere('e.eventDate BETWEEN :start AND :end')
@@ -331,7 +331,7 @@ public function getDashboardData(int $companyId): JsonResponse
 
     // Events this month including count
     $eventsMonthQuery = $this->eventRepository->createQueryBuilder('e')
-        ->select('COUNT(distinct(e.id)) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
+        ->select('COUNT(distinct(e.id)) as eventCount, SUM(ei.quantity) as quantity, SUM(DISTINCT e.totalPrice) as amount')
         ->leftJoin('e.eventItems', 'ei')
         ->where('e.eventType = :typeId AND e.company = :companyId')
         ->andWhere('e.eventDate BETWEEN :start AND :end')
@@ -346,7 +346,7 @@ public function getDashboardData(int $companyId): JsonResponse
 
     // Events this year including count
     $eventsYearQuery = $this->eventRepository->createQueryBuilder('e')
-        ->select('COUNT(distinct(e.id)) as eventCount, SUM(ei.quantity) as quantity, SUM(ei.price * ei.quantity) as amount')
+        ->select('COUNT(distinct(e.id)) as eventCount, SUM(ei.quantity) as quantity, SUM(DISTINCT e.totalPrice) as amount')
         ->leftJoin('e.eventItems', 'ei')
         ->where('e.eventType = :typeId AND e.company = :companyId')
         ->andWhere('e.eventDate BETWEEN :start AND :end')

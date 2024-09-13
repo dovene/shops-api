@@ -85,7 +85,7 @@ class CompanyController extends AbstractController
         $debutDate = new \DateTime($data['debut'] ?? 'now');
         $subscription->setDebut($debutDate);
         // Add 6 months to the debut date for the end date
-        $endDate = (clone $debutDate)->modify('+6 months');
+        $endDate = (clone $debutDate)->modify('+3 months');
         $subscription->setEnd($endDate);
         $subscription->setType($data['type'] ?? 'standard');
         $subscription->setStatus($data['status'] ?? 'enabled');
