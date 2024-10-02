@@ -679,8 +679,8 @@ public function getProductRankingByAmount(Request $request, int $companyId): Jso
         ->orderBy('totalSalesAmount', 'DESC')  // Order by total sales amount
         ->setParameter('eventType', $ventesEventType)
         ->setParameter('companyId', $companyId)
-        ->setParameter('startDate', $startDate->format('Y-m-d'))
-        ->setParameter('endDate', $endDate->format('Y-m-d'));
+        ->setParameter('startDate', $startDate)
+        ->setParameter('endDate', $endDate);
 
     // Execute the query and get the result
     $ranking = $qb->getQuery()->getResult();
