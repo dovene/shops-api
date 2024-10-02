@@ -556,7 +556,9 @@ public function getFinancialSummaryByEventType(Request $request, int $companyId)
     ];
 
     return $this->json($data);
-}#[Route('/api/events/monthly-sales/{companyId}', methods: ['GET'])]
+}
+
+#[Route('/api/events/monthly-sales/{companyId}', methods: ['GET'])]
 public function getMonthlySales(int $companyId): JsonResponse
 {
     $currentDate = new \DateTime();
@@ -636,6 +638,60 @@ private function getFrenchMonthAbbreviation($monthNumber): string
         '12' => 'Déc.'
     ];
     return $map[$monthNumber] ?? 'N/A';
+}
+
+#[Route('/ranking/{companyId}', methods: ['GET'])]
+public function getProductRankingByAmount(Request $request, int $companyId): JsonResponse
+{
+    // Get startDate and endDate from request query parameters
+    $startDate = $request->query->get('startDate');
+    $endDate = $request->query->get('endDate');
+
+    if (!$startDate || !$endDate) {
+        return new JsonResponse(['status' => 0, 'message' => 'Both startDate and endDate are required'], JsonResponse::HTTP_BAD_REQUEST);
+    }
+
+    // Convert dates from string to DateTime objects
+    $startDate = new \DateTime($startDate);
+    $endDate = new \DateTime($endDate);
+
+    // Fetch the 'VENTES' event type
+    $ventesEventType = $this->eventTypeRepository->findOneBy(['name' => 'VENTES']);
+    if (!$ventesEventType) {
+        return new JsonResponse(['status' => 0, 'message' => 'Event type VENTES not found'], JsonResponse::HTTP_NOT_FOUND);
+    }
+
+    // Build the query
+    $qb = $this->entityManager->createQueryBuilder();
+    $qb->select([
+            'i.name AS productName',
+            'i.reference AS productReference',
+            'SUM(ei.quantity * ei.price) AS totalSalesAmount',
+            'SUM(ei.quantity) AS totalQuantitySold'
+        ])
+        ->from(EventItem::class, 'ei')  // Start from the EventItem entity
+        ->innerJoin('ei.item', 'i')      // Join the Item entity
+        ->innerJoin('ei.event', 'e')     // Join the Event entity
+        ->where('e.eventType = :eventType')
+        ->andWhere('e.company = :companyId')
+        ->andWhere('e.eventDate BETWEEN :startDate AND :endDate')
+        ->groupBy('i.id')  // Group by item to aggregate quantities and sales amounts
+        ->orderBy('totalSalesAmount', 'DESC')  // Order by total sales amount
+        ->setParameter('eventType', $ventesEventType)
+        ->setParameter('companyId', $companyId)
+        ->setParameter('startDate', $startDate->format('Y-m-d'))
+        ->setParameter('endDate', $endDate->format('Y-m-d'));
+
+    // Execute the query and get the result
+    $ranking = $qb->getQuery()->getResult();
+
+    // If no results found, return an empty array
+    if (empty($ranking)) {
+        return new JsonResponse(['status' => 1, 'message' => 'No items sold in the given period'], JsonResponse::HTTP_OK);
+    }
+
+    // Return the ranking as JSON response
+    return $this->json($ranking);
 }
 
 

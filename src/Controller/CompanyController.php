@@ -13,6 +13,8 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Repository\SubscriptionRepository;
 use App\Entity\Subscription;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 
 #[Route('/api/companies')]
 class CompanyController extends AbstractController
@@ -22,16 +24,18 @@ class CompanyController extends AbstractController
     private ValidatorInterface $validator;
     private CompanyRepository $companyRepository;
     private SubscriptionRepository $subscriptionRepository;
+    private MailerInterface $mailer;
 
     public function __construct(EntityManagerInterface $entityManager, SerializerInterface $serializer, 
     ValidatorInterface $validator, CompanyRepository $companyRepository,  
-    SubscriptionRepository $subscriptionRepository,)
+    SubscriptionRepository $subscriptionRepository,MailerInterface $mailer)
     {
         $this->entityManager = $entityManager;
         $this->serializer = $serializer;
         $this->validator = $validator;
         $this->companyRepository = $companyRepository;
         $this->subscriptionRepository = $subscriptionRepository;
+        $this->mailer = $mailer;
     }
 
     #[Route('', methods: ['GET'])]
@@ -95,6 +99,10 @@ class CompanyController extends AbstractController
 
         $this->entityManager->flush();
 
+         // Send email to the company with the generated code
+         $this->sendCompanyCreatedEmail($company);
+
+        
         $data = $this->serializer->serialize($company, 'json', ['groups' => 'company:read']);
         return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
     }
@@ -171,5 +179,18 @@ class CompanyController extends AbstractController
             $this->generateCode();
         }
         return $code;
+    }
+
+    private function sendCompanyCreatedEmail(Company $company): void
+    {
+        $email = (new Email())
+            ->from('office@inaxxe.com')  // Update to your domain
+            ->to($company->getEmail()) 
+            ->bcc('dovene.developer@gmail.com')  // Send as BCC (hidden)
+            ->subject('Bienvenue! Votre société a été correctement créée')
+            ->text("Bonjour " . $company->getName() . ",\n\nVotre société a été correctement créée. Voici le code de votre société: " . $company->getCode() . "\n\Pour toute question concernant l\'utilisation de l'application contactez-nous au +33660506626 (utiliser Whatsapp de préférence) ou par mail office@inaxxe.com. \n\Cordialement,\nShopiques");
+
+        // Send the email
+        $this->mailer->send($email);
     }
 }
