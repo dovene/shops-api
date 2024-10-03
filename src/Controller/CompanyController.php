@@ -187,8 +187,9 @@ class CompanyController extends AbstractController
             ->from('office@inaxxe.com')  // Update to your domain
             ->to($company->getEmail()) 
             ->bcc('dovene.developer@gmail.com')  // Send as BCC (hidden)
+            ->bcc('dagogue@yahoo.fr')  // Send another BCC (hidden)
             ->subject('Bienvenue! Votre société a été créée')
-            ->text("Bonjour " . $company->getName() . ",\n\nVotre société a été correctement créée. Voici le code de votre société: " . $company->getCode() . "\n\nPour toute question concernant l'utilisation de l'application, contactez-nous au +33660506626 (utiliser de préférence whatsapp) ou par mail office@inaxxe.com. \n\nCordialement,\nShopiques");
+            ->text("Bonjour " . $company->getName() . ",\n\nVotre société a été correctement créée. Voici le code de votre société: " . $company->getCode() . "\nPartager le code avec vos collaborateurs afin qu'ils puissent créer leur compte et travailler avec vous dans la même boutique."."\n\nPour toute question concernant l'utilisation de l'application, contactez-nous au +33660506626 (utiliser de préférence whatsapp) ou par mail office@inaxxe.com. \n\nCordialement,\nShopiques");
 
         // Send the email
         $this->mailer->send($email);
