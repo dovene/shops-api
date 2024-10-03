@@ -11,10 +11,10 @@ DROP TABLE IF EXISTS `event_type`;
 DROP TABLE IF EXISTS `item_category`;
 DROP TABLE IF EXISTS `business_partner`;
 DROP TABLE IF EXISTS `user`;
-DROP TABLE IF EXISTS `company`;
 DROP TABLE IF EXISTS `payment_type`;
 DROP TABLE IF EXISTS `subscription`;
 DROP TABLE IF EXISTS `app_minimal_version`;
+DROP TABLE IF EXISTS `company`;
 
 CREATE TABLE `company` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
