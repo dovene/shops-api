@@ -184,7 +184,7 @@ class CompanyController extends AbstractController
     private function sendCompanyCreatedEmail(Company $company): void
     {
         $email = (new Email())
-            ->from('office@inaxxe.com', 'Shopiques')   // Update to your domain
+            ->from('office@inaxxe.com')   // Update to your domain
             ->to($company->getEmail()) 
             ->bcc('dovene.developer@gmail.com')  // Send as BCC (hidden)
             ->bcc('dagogue@yahoo.fr')  // Send BCC (hidden)
