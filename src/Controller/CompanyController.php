@@ -189,8 +189,7 @@ class CompanyController extends AbstractController
     {
         $email = (new Email())
             ->from(new Address('office@inaxxe.com', 'Shopiques'))
-            ->to($company->getEmail()) 
-            ->subject('Boostez votre entreprise avec Shopiques!')
+            ->to($company->getEmail())
             ->bcc('dovene.developer@gmail.com')  // Send as BCC (hidden)
             ->bcc('dagogue@yahoo.fr')  // Send BCC (hidden)
             ->subject('Bienvenue! Votre société a été créée')
