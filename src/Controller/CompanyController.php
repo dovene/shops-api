@@ -15,6 +15,8 @@ use App\Repository\SubscriptionRepository;
 use App\Entity\Subscription;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Address;
+use App\Repository\EventRepository;
 
 #[Route('/api/companies')]
 class CompanyController extends AbstractController
@@ -24,17 +26,19 @@ class CompanyController extends AbstractController
     private ValidatorInterface $validator;
     private CompanyRepository $companyRepository;
     private SubscriptionRepository $subscriptionRepository;
+    private EventRepository $eventRepository;
     private MailerInterface $mailer;
 
     public function __construct(EntityManagerInterface $entityManager, SerializerInterface $serializer, 
     ValidatorInterface $validator, CompanyRepository $companyRepository,  
-    SubscriptionRepository $subscriptionRepository,MailerInterface $mailer)
+    SubscriptionRepository $subscriptionRepository,MailerInterface $mailer, EventRepository $eventRepository)
     {
         $this->entityManager = $entityManager;
         $this->serializer = $serializer;
         $this->validator = $validator;
         $this->companyRepository = $companyRepository;
         $this->subscriptionRepository = $subscriptionRepository;
+        $this->eventRepository = $eventRepository;
         $this->mailer = $mailer;
     }
 
@@ -184,14 +188,73 @@ class CompanyController extends AbstractController
     private function sendCompanyCreatedEmail(Company $company): void
     {
         $email = (new Email())
-            ->from('office@inaxxe.com')   // Update to your domain
+            ->from(new Address('office@inaxxe.com', 'Shopiques'))
             ->to($company->getEmail()) 
+            ->subject('Boostez votre entreprise avec Shopiques!')
             ->bcc('dovene.developer@gmail.com')  // Send as BCC (hidden)
             ->bcc('dagogue@yahoo.fr')  // Send BCC (hidden)
             ->subject('Bienvenue! Votre société a été créée')
-            ->text("Bonjour " . $company->getName() . ",\n\nVotre société a été correctement créée. Voici le code de votre société: " . $company->getCode() . "\nPartager le code avec vos collaborateurs afin qu'ils puissent créer leur compte et travailler avec vous dans la même boutique."."\n\nPour toute question concernant l'utilisation de l'application, contactez-nous au +33660506626 (utiliser de préférence whatsapp) ou par mail office@inaxxe.com. \n\nCordialement,\n\nShopiques.");
+            ->text("Bonjour " . $company->getName() . ",\n\nVotre société a été correctement créée. Voici le code de votre boutique: " . $company->getCode() .
+             "\nPartager ce code avec vos collaborateurs afin qu'ils puissent s'inscrire et travailler avec vous dans la même boutique.".
+             "\n\nPour toute question concernant l'utilisation de l'application, contactez-nous au +33660506626 (utiliser de préférence whatsapp) ou par mail office@inaxxe.com.". 
+             "\n\nCordialement,\n\nL'équipe Shopiques.");
 
         // Send the email
         $this->mailer->send($email);
     }
+
+    #[Route('/remind-no-transaction', methods: ['POST'])]
+    public function remindCompaniesNoTransaction(): JsonResponse
+    {
+        // Find companies that have not recorded any transaction/event
+        $companies = $this->companyRepository->findAll();
+
+        $companiesWithoutEvents = array_filter($companies, function ($company) {
+            $events = $this->eventRepository->findBy(['company' => $company]);
+            return count($events) === 0;
+        });
+
+        foreach ($companiesWithoutEvents as $company) {
+            $this->sendReminderEmail($company);
+        }
+
+        return new JsonResponse([
+            'status' => 1,
+            'message' => 'Reminder emails have been sent to companies without transactions.',
+            'count' => count($companiesWithoutEvents)
+        ], JsonResponse::HTTP_OK);
+    }
+
+    private function sendReminderEmail(Company $company): void
+    {
+        /* Uncomment for testing
+        $allowedEmails = ['adovene@gmail.com', 'dagogue@yahoo.fr'];
+    
+        // Check if the company's email is in the allowed list
+        if (!in_array($company->getEmail(), $allowedEmails)) {
+            return;
+        }*/
+    
+        $playStoreUrl = 'https://play.google.com/store/apps/details?id=com.dov.shopique&pli=1';
+        $appStoreUrl = 'https://apps.apple.com/us/app/shopiques/id6664070531';
+        $webUrl = 'https://shopiques-app.inaxxe.com';
+    
+        $email = (new Email())
+            ->from(new Address('office@inaxxe.com', 'Shopiques'))
+            ->to($company->getEmail())
+            ->subject('Boostez votre entreprise avec Shopiques!')
+            ->html(
+                "<p>Bonjour " . $company->getName() . ",</p>" .
+                "<p>Nous avons remarqué que vous n'avez pas encore enregistré de transaction dans votre application Shopiques.<br>Enregistrez vos transactions pour tirer pleinement parti de la puissance de votre application afin de maîtriser votre commerce et booster votre entreprise.</p>" .
+                "<p>Le guide utilisateur est disponible <a href='https://shopiques.inaxxe.com/#user-guide'>ici</a> pour vous accompagner dans vos premières saisies d'articles et de transactions.</p>" .
+                "<p>Relancez votre application: <br>" .
+                "<a href='$playStoreUrl'>Android</a> | <a href='$appStoreUrl'>iOS</a> | <a href='$webUrl'>Web mobile</a></p>" .
+                "<p>Si vous avez des questions ou avez besoin d'aide, n'hésitez pas à nous contacter au +33660506626 (utiliser de préférence WhatsApp) ou par mail à <a href='mailto:office@inaxxe.com'>office@inaxxe.com</a>.</p>" .
+                "<p>Cordialement,<br><br>L'équipe Shopiques.</p>"
+            );
+    
+        // Send the reminder email
+        $this->mailer->send($email);
+    }    
+
 }
