@@ -217,3 +217,6 @@ CREATE TABLE `app_minimal_version` (
 INSERT INTO `app_minimal_version` (`id`, `app_id`, `app_version`, `app_os`, `app_name`, `is_minimal_version_mandatory`) VALUES
 (1, 'com.dov.shopique', '0.0.0', 'android', 'Shopiques', 0),
 (2, 'com.dov.shopique', '0.0.0', 'ios', 'Shopiques', 0);
+
+ALTER TABLE item
+ADD COLUMN requires_stock_management tinyint(1) NOT NULL DEFAULT 1;

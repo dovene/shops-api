@@ -100,6 +100,7 @@ class ItemController extends AbstractController
         $instance->setSellPrice($data['sell_price']?? null);
         $instance->setBuyPrice($data['buy_price'] ?? null);
         $instance->setpicture($data['picture'] ?? null);
+        $instance->setRequiresStockManagement($data['requires_stock_management'] ?? 1);
         $instance->setCompany($company); 
         $instance->setUser($user);
         $instance->setItemCategory($category);
@@ -136,12 +137,29 @@ class ItemController extends AbstractController
         if (!$category) {
             return new JsonResponse(['status' => 0, 'message' => 'Category not found'], JsonResponse::HTTP_NOT_FOUND);
         }
-      
+
+        // catch sql error SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'name' for key 'item_name_company_id_unique'
+     
+        if ($data['name'] != $instance->getName() || $data['company_id'] != $instance->getCompany()->getId()) {
+            $existingInstance = $this->itemRepository->findOneBy(['name' => $data['name'], 'company' => $data['company_id']]);
+            if ($existingInstance) {
+                return $this->json(['message' => 'Item name already exists for this company'], JsonResponse::HTTP_CONFLICT);
+            }
+        }
+
+        // catch sql error SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'reference' for key 'item_reference_company_id_unique'
+        if ($data['reference'] != $instance->getReference() || $data['company_id'] != $instance->getCompany()->getId()) {
+            $existingInstance = $this->itemRepository->findOneBy(['reference' => $data['reference'], 'company' => $data['company_id']]);
+            if ($existingInstance) {
+                return $this->json(['message' => 'Item reference already exists for this company'], JsonResponse::HTTP_CONFLICT);
+            }
+        }
 
         $instance->setName($data['name']?? $instance->getName());    
         $instance->setReference($data['reference'] ?? $instance->getReference());
         $instance->setSellPrice($data['sell_price'] ?? $instance->getSellPrice());
         $instance->setBuyPrice($data['buy_price'] ?? $instance->getBuyPrice());
+        $instance->setRequiresStockManagement($data['requires_stock_management'] ?? $instance->getRequiresStockManagement());
         $instance->setPicture($data['picture'] ?? $instance->getPicture());
         $instance->setCompany($company); 
         $instance->setUser($user);

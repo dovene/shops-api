@@ -138,11 +138,15 @@ class EventController extends AbstractController
             $totalQuantity += $eventItem->getQuantity();
             $totalPrice += $eventItem->getPrice() * $eventItem->getQuantity();
 
-            // Update item quantity based on event type
-            if ($eventType->getIsAnIncreaseStockType() == 1) {
-                $item->setQuantity($item->getQuantity() + $eventItem->getQuantity());
-            } else if ($eventType->getIsAnIncreaseStockType() == 0) {
-                $item->setQuantity($item->getQuantity() - $eventItem->getQuantity());
+
+            // Update item quantity based on event type if item requires stock management
+            if ($item->getRequiresStockManagement() == 1) {
+                if ($eventType->getIsAnIncreaseStockType() == 1) {
+                    $item->setQuantity($item->getQuantity() + $eventItem->getQuantity());
+                } else if ($eventType->getIsAnIncreaseStockType() == 0) {
+                    $item->setQuantity($item->getQuantity() - $eventItem->getQuantity());
+                }
+                $this->entityManager->persist($item);
             }
 
             $this->entityManager->persist($eventItem);
@@ -218,15 +222,18 @@ class EventController extends AbstractController
             foreach ($eventItems as $eventItem) {
                 $item = $eventItem->getItem();
 
-                if ($eventType->getIsAnIncreaseStockType()) {
-                    // Event was increasing stock, so rollback by decreasing quantity
-                    $item->setQuantity($item->getQuantity() - $eventItem->getQuantity());
-                } else {
-                    // Event was decreasing stock, so rollback by increasing quantity
-                    $item->setQuantity($item->getQuantity() + $eventItem->getQuantity());
-                }
-
-                $this->entityManager->persist($item);
+                // if item requires stock management
+                if ($item->getRequiresStockManagement() == 1) {
+                    if ($eventType->getIsAnIncreaseStockType()) {
+                        // Event was increasing stock, so rollback by decreasing quantity
+                        $item->setQuantity($item->getQuantity() - $eventItem->getQuantity());
+                    } else {
+                        // Event was decreasing stock, so rollback by increasing quantity
+                        $item->setQuantity($item->getQuantity() + $eventItem->getQuantity());
+                    }
+    
+                    $this->entityManager->persist($item);
+                }               
             }
         }
 

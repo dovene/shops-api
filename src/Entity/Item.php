@@ -65,6 +65,10 @@ class Item
     #[Groups(['item:read'])]
     private ?int $quantity = null;
 
+    #[ORM\Column(type: 'integer', name: 'requires_stock_management', options: ['default' => 1])]
+    #[Groups(['item:read'])]
+    private ?int $requiresStockManagement = 1;
+
 
     #[ORM\ManyToOne(targetEntity: ItemCategory::class)]
     #[ORM\JoinColumn(name: "item_category_id", referencedColumnName: "id", nullable: false)]
@@ -215,4 +219,17 @@ class Item
 
         return $this;
     }
+
+    public function getRequiresStockManagement(): ?int
+    {
+        return $this->requiresStockManagement;
+    }
+
+    public function setRequiresStockManagement(int $requiresStockManagement): self
+    {
+        $this->requiresStockManagement = $requiresStockManagement;
+
+        return $this;
+    }
+    
 }
