@@ -29,10 +29,15 @@ class CompanyController extends AbstractController
     private EventRepository $eventRepository;
     private MailerInterface $mailer;
 
-    public function __construct(EntityManagerInterface $entityManager, SerializerInterface $serializer, 
-    ValidatorInterface $validator, CompanyRepository $companyRepository,  
-    SubscriptionRepository $subscriptionRepository,MailerInterface $mailer, EventRepository $eventRepository)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        SerializerInterface $serializer,
+        ValidatorInterface $validator,
+        CompanyRepository $companyRepository,
+        SubscriptionRepository $subscriptionRepository,
+        MailerInterface $mailer,
+        EventRepository $eventRepository
+    ) {
         $this->entityManager = $entityManager;
         $this->serializer = $serializer;
         $this->validator = $validator;
@@ -87,7 +92,7 @@ class CompanyController extends AbstractController
 
         $this->entityManager->persist($company);
 
-        
+
         // create subscription
         $subscription = new Subscription();
         $debutDate = new \DateTime($data['debut'] ?? 'now');
@@ -103,10 +108,10 @@ class CompanyController extends AbstractController
 
         $this->entityManager->flush();
 
-         // Send email to the company with the generated code
-         $this->sendCompanyCreatedEmail($company);
+        // Send email to the company with the generated code
+        $this->sendCompanyCreatedEmail($company);
 
-        
+
         $data = $this->serializer->serialize($company, 'json', ['groups' => 'company:read']);
         return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
     }
@@ -194,9 +199,9 @@ class CompanyController extends AbstractController
             ->bcc('dagogue@yahoo.fr')  // Send BCC (hidden)
             ->subject('Bienvenue! Votre société a été créée')
             ->text("Bonjour " . $company->getName() . ",\n\nVotre société a été correctement créée. Voici le code de votre boutique: " . $company->getCode() .
-             "\nPartager ce code avec vos collaborateurs afin qu'ils puissent s'inscrire et travailler avec vous dans la même boutique.".
-             "\n\nPour toute question concernant l'utilisation de l'application, contactez-nous au +33660506626 (utiliser de préférence whatsapp) ou par mail office@inaxxe.com.". 
-             "\n\nCordialement,\n\nL'équipe Shopiques.");
+                "\nPartager ce code avec vos collaborateurs afin qu'ils puissent s'inscrire et travailler avec vous dans la même boutique." .
+                "\n\nPour toute question concernant l'utilisation de l'application, contactez-nous au +33660506626 (utiliser de préférence whatsapp) ou par mail office@inaxxe.com." .
+                "\n\nCordialement,\n\nL'équipe Shopiques.");
 
         // Send the email
         $this->mailer->send($email);
@@ -233,27 +238,126 @@ class CompanyController extends AbstractController
         if (!in_array($company->getEmail(), $allowedEmails)) {
             return;
         }*/
-    
+
         $playStoreUrl = 'https://play.google.com/store/apps/details?id=com.dov.shopique&pli=1';
         $appStoreUrl = 'https://apps.apple.com/us/app/shopiques/id6664070531';
         $webUrl = 'https://shopiques-app.inaxxe.com';
-    
+
         $email = (new Email())
             ->from(new Address('office@inaxxe.com', 'Shopiques'))
             ->to($company->getEmail())
             ->subject('Boostez votre entreprise avec Shopiques!')
             ->html(
                 "<p>Bonjour " . $company->getName() . ",</p>" .
-                "<p>Nous avons remarqué que vous n'avez pas encore enregistré de transaction dans votre application Shopiques.<br>Enregistrez vos transactions pour tirer pleinement parti de la puissance de votre application afin de maîtriser votre commerce et booster votre entreprise.</p>" .
-                "<p>Le guide utilisateur est disponible <a href='https://shopiques.inaxxe.com/#user-guide'>ici</a> pour vous accompagner dans vos premières saisies d'articles et de transactions.</p>" .
-                "<p>Relancez votre application: <br>" .
-                "<a href='$playStoreUrl'>Android</a> | <a href='$appStoreUrl'>iOS</a> | <a href='$webUrl'>Web mobile</a></p>" .
-                "<p>Si vous avez des questions ou avez besoin d'aide, n'hésitez pas à nous contacter au +33660506626 (utiliser de préférence WhatsApp) ou par mail à <a href='mailto:office@inaxxe.com'>office@inaxxe.com</a>.</p>" .
-                "<p>Cordialement,<br><br>L'équipe Shopiques.</p>"
+                    "<p>Nous avons remarqué que vous n'avez pas encore enregistré de transaction dans votre application Shopiques.<br>Enregistrez vos transactions pour tirer pleinement parti de la puissance de votre application afin de maîtriser votre commerce et booster votre entreprise.</p>" .
+                    "<p>Le guide utilisateur est disponible <a href='https://shopiques.inaxxe.com/#user-guide'>ici</a> pour vous accompagner dans vos premières saisies d'articles et de transactions.</p>" .
+                    "<p>Relancez votre application: <br>" .
+                    "<a href='$playStoreUrl'>Android</a> | <a href='$appStoreUrl'>iOS</a> | <a href='$webUrl'>Web mobile</a></p>" .
+                    "<p>Si vous avez des questions ou avez besoin d'aide, n'hésitez pas à nous contacter au +33660506626 (utiliser de préférence WhatsApp) ou par mail à <a href='mailto:office@inaxxe.com'>office@inaxxe.com</a>.</p>" .
+                    "<p>Cordialement,<br><br>L'équipe Shopiques.</p>"
             );
-    
+
         // Send the reminder email
         $this->mailer->send($email);
-    }    
+    }
 
+    #[Route('/remind-3days-no-event', methods: ['POST'])]
+    public function remindCompaniesNoRecentEvent(): JsonResponse
+    {
+        // 1. Determine the date threshold for 3 days
+        $threshold = new \DateTime('-3 days');
+
+        // 2. Get all companies
+        $allCompanies = $this->companyRepository->findAll();
+
+        // 3. Filter to find those who have not recorded any event in the last 3 days
+        $companiesNoRecentEvent = array_filter($allCompanies, function (Company $company) use ($threshold) {
+            // Query for events created in the last 3 days
+            $recentEvents = $this->eventRepository->createQueryBuilder('e')
+                ->where('e.company = :company')
+                ->andWhere('e.eventDate >= :threshold')
+                ->setParameter('company', $company)
+                ->setParameter('threshold', $threshold)
+                ->getQuery()
+                ->getResult();
+
+            // If no recent events found, this company qualifies
+            return count($recentEvents) === 0;
+        });
+
+        // 4. Send a reminder email to each company that hasn't recorded an event in last 3 days
+        foreach ($companiesNoRecentEvent as $company) {
+            $this->sendNoTransaction3DaysEmail($company);
+        }
+
+        // 5. Return a JSON response with count
+        return new JsonResponse([
+            'status' => 1,
+            'message' => 'Reminder emails have been sent to companies without events in the last 3 days.',
+            'count' => count($companiesNoRecentEvent)
+        ]);
+    }
+
+    // A new method to send the email for companies with no recent event
+    private function sendNoTransaction3DaysEmail(Company $company): void
+    {
+        $playStoreUrl = 'https://play.google.com/store/apps/details?id=com.dov.shopique&pli=1';
+        $appStoreUrl = 'https://apps.apple.com/us/app/shopiques/id6664070531';
+        $webUrl = 'https://shopiques-app.inaxxe.com';
+
+        $email = (new Email())
+            ->from(new Address('office@inaxxe.com', 'Shopiques'))
+            ->to($company->getEmail())
+            ->subject('Aucun événement saisi depuis 3 jours ?')
+            ->html(
+                "<p>Bonjour " . $company->getName() . ",</p>" .
+                    "<p>Nous avons remarqué qu'aucune transaction (ventes, achats etc.) n'a été enregistrée dans votre application Shopiques au cours des trois derniers jours. Saisir régulièrement vos transactions est un moyen efficace 
+                     pour mieux gérer votre commerce et booster votre activité.</p>" .
+                    "<p>Si vous avez des questions ou avez besoin d'aide, n'hésitez pas à nous contacter au +33660506626 (utiliser de préférence WhatsApp) ou par mail à <a href='mailto:office@inaxxe.com'>office@inaxxe.com</a>.</p>" .
+                    "<p>Nous sommes là pour vous aider à tirer le meilleur parti de l'application Shopiques.</p>" .
+                    "<p>Le guide utilisateur est disponible <a href='https://shopiques.inaxxe.com/#user-guide'>ici</a> pour vous accompagner dans vos saisies de transactions ou d'articles.</p>" .
+                    "<p>Relancez votre application: <br>" .
+                    "<a href='$playStoreUrl'>Android</a> | <a href='$appStoreUrl'>iOS</a> | <a href='$webUrl'>Web mobile</a></p>" .
+                    "<p>Cordialement,<br><br>L'équipe Shopiques.</p>"
+            );
+
+        $this->mailer->send($email);
+    }
+
+    #[Route('/reminder/auto-remind-3days-no-event', methods: ['GET'])]
+    public function autoRemindCompaniesNoRecentEvent(): JsonResponse
+    {
+        // 1. Determine the date threshold for 3 days
+        $threshold = new \DateTime('-3 days');
+
+        // 2. Get all companies
+        $allCompanies = $this->companyRepository->findBy(['id' => 7]);
+
+        // 3. Filter to find those who have not recorded any event in the last 3 days
+        $companiesNoRecentEvent = array_filter($allCompanies, function (Company $company) use ($threshold) {
+            // Query for events created in the last 3 days
+            $recentEvents = $this->eventRepository->createQueryBuilder('e')
+                ->where('e.company = :company')
+                ->andWhere('e.eventDate >= :threshold')
+                ->setParameter('company', $company)
+                ->setParameter('threshold', $threshold)
+                ->getQuery()
+                ->getResult();
+
+            // If no recent events found, this company qualifies
+            return count($recentEvents) === 0;
+        });
+
+        // 4. Send a reminder email to each company that hasn't recorded an event in last 3 days
+        foreach ($companiesNoRecentEvent as $company) {
+            $this->sendNoTransaction3DaysEmail($company);
+        }
+
+        // 5. Return a JSON response with count
+        return new JsonResponse([
+            'status' => 1,
+            'message' => 'Reminder emails have been sent to companies without events in the last 3 days.',
+            'count' => count($companiesNoRecentEvent)
+        ]);
+    }
 }
