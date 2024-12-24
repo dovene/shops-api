@@ -43,11 +43,11 @@ class EventType
     private ?string $name = null;
 
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
-    #[Groups(['eventtype:read', 'eventtype:write'])]
+    #[Groups(['eventtype:read', 'eventtype:write', 'event:read'])]
     private ?int $isFree = null;
 
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
-    #[Groups(['eventtype:read', 'eventtype:write'])]
+    #[Groups(['eventtype:read', 'eventtype:write', 'event:read'])]
     private ?int $isAnIncreaseStockType = null;
 
     #[ORM\Column(type: 'datetime', options: ['default' => 'CURRENT_TIMESTAMP'])]

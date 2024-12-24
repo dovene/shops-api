@@ -439,6 +439,7 @@ public function getUnpaidEvents(Request $request, int $companyId): JsonResponse
     $partnerId = $request->query->get('partnerId');
    
     $validated = 'validated';
+    $paidEvenType = 0;
     
     // Convert dates from string to DateTime objects
     $startDate = new \DateTime($startDate);
@@ -464,10 +465,12 @@ public function getUnpaidEvents(Request $request, int $companyId): JsonResponse
         ->where('e.company = :companyId')
         ->andWhere('e.eventDate BETWEEN :startDate AND :endDate')
         ->andWhere('e.status = :status')
+        ->andWhere('et.isFree = :paidEvenType')
         ->setParameter('status', $validated)
         ->setParameter('companyId', $companyId)
         ->setParameter('startDate', $startDate)
-        ->setParameter('endDate', $endDate);
+        ->setParameter('endDate', $endDate)
+        ->setParameter('paidEvenType', $paidEvenType);
     
     // Optional filtering by partner
    
