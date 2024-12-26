@@ -72,11 +72,11 @@ CREATE TABLE `event_type` (
   UNIQUE KEY `name_UNIQUE` (`name`)
 );
 
-INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("VENTES",0);
-INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("ACHATS",1);
-INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("DEFECTUEUX",0);
-INSERT INTO event_type (name, is_an_increase_stock_type) VALUES ("APPORTS GRATUITS",1);
-
+INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("VENTES",0, 0);
+INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("ACHATS",1, 0);
+INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("DEFECTUEUX",0, 1);
+INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("APPORTS GRATUITS",1, 1);
+INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("DEVIS",2, 1);
 
 CREATE TABLE `business_partner` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -202,8 +202,6 @@ ADD COLUMN currency varchar(25) DEFAULT NULL;
 ALTER TABLE company
 DROP COLUMN devise;
 
-INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("DEVIS",2, 1);
-
 CREATE TABLE `app_minimal_version` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `app_id` varchar(50) DEFAULT NULL,
@@ -220,3 +218,6 @@ INSERT INTO `app_minimal_version` (`id`, `app_id`, `app_version`, `app_os`, `app
 
 ALTER TABLE item
 ADD COLUMN requires_stock_management tinyint(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE item
+ADD COLUMN initial_quantity int DEFAULT 0;

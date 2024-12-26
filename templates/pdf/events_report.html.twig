@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport des événements - {{ company.name }}</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 4px; /* unified padding */
+        }
+        th {
+            background-color: #eee;
+        }
+        body { 
+            font-size: 12px; 
+        }
+        h1 { 
+            font-size: 18px; 
+        }
+    
+        /* Position the footer line at the bottom */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: left;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .right {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Relevé des transactions</h2>
+<p>Entreprise : {{ company.name }} (Code: {{ company.code }})</p>
+<p>Période : {{ startDate|date('d/m/Y') }} au {{ endDate|date('d/m/Y') }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Transactions</th>
+            <th>Dépenses</th>
+            <th>Recettes</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in eventsData %}
+        <tr>
+            <td>{{ row.date|raw }}</td>
+            <td>{{ row.transaction|raw }}</td>
+            <td class="right">
+                {% if row.expenses is not null %}
+                    {{ row.expenses|number_format(2, ',', ' ') }}
+                {% endif %}
+            </td>
+            <td class="right">
+                {% if row.income is not null %}
+                    {{ row.income|number_format(2, ',', ' ') }}
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- Footer placed at the bottom using position: fixed -->
+<div class="footer">
+    Généré le {{ "now"|date("d/m/Y H:i") }}.
+</div>
+
+</body>
+</html>

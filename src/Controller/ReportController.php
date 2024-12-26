@@ -22,6 +22,8 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use App\Entity\Item;
 use App\Entity\EventItem;
+use App\Entity\Event;
+use App\Entity\Payment;
 
 #[Route('/api/reports')]
 class ReportController extends AbstractController
@@ -179,7 +181,7 @@ class ReportController extends AbstractController
         $threshold = new \DateTime('-3 days');
 
         // 2. Get all companies
-        $allCompanies = $this->companyRepository->findBy(['id' => 7]);
+        $allCompanies = $this->companyRepository->findAll();
 
         // 3. Filter to find those who have not recorded any event in the last 3 days
         $companiesNoRecentEvent = array_filter($allCompanies, function (Company $company) use ($threshold) {
@@ -451,4 +453,386 @@ class ReportController extends AbstractController
 
         return $result['totalOut'] ?? 0;
     }
+
+
+/**
+ * add a route that send to all companies an email to report the events situation. 
+ * In attached file add the list of the company events and their total amount
+ **/
+
+#[Route('/event-periodic-report', methods: ['POST'])]
+public function sendEventPeriodicReport(Request $request): JsonResponse
+{
+    // 1. Determine the period (weekly or monthly). Default to 'monthly'.
+    $period = $request->query->get('period', 'monthly');
+
+    // 2. Calculate date range
+    [$startDate, $endDate] = $this->calculatePeriodDates($period);
+
+    // 3. For testing, you might fetch only company ID=7
+    // Otherwise, fetch all companies: $companies = $this->companyRepository->findAll();
+    $companies = $this->companyRepository->findBy(['id' => 7]);
+
+    foreach ($companies as $company) {
+        // 4. Build PDF for each company
+        $pdfContent = $this->buildEventPdf($company, $startDate, $endDate);
+
+        // 5. Compose the email
+        $email = (new Email())
+            ->from(new Address('office@inaxxe.com', 'Shopiques'))
+            ->to($company->getEmail())
+            ->subject("Rapport des événements - {$period}")
+            ->text("Veuillez trouver ci-joint votre rapport des événements pour la période {$period}.")
+            ->attach($pdfContent, "events_report_{$period}.pdf", 'application/pdf');
+
+        // 6. Send email
+        $this->mailer->send($email);
+    }
+
+    return new JsonResponse([
+        'status' => 1,
+        'message' => "Event report ($period) sent to all companies.",
+        'count' => count($companies),
+    ], JsonResponse::HTTP_OK);
+}
+
+private function buildEventPdf(Company $company, \DateTime $startDate, \DateTime $endDate): string
+{
+    // 1. Fetch the relevant events for this company and date range
+    $eventsData = $this->fetchEventData($company, $startDate, $endDate);
+
+    // 2. Render the HTML via Twig
+    $html = $this->renderView('pdf/events_report.html.twig', [
+        'company'   => $company,
+        'startDate' => $startDate,
+        'endDate'   => $endDate,
+        'eventsData' => $eventsData,
+    ]);
+
+    // 3. Use Dompdf to generate PDF
+    $options = new Options();
+    $options->set('defaultFont', 'DejaVu Sans');  // or other suitable font
+    $dompdf = new Dompdf($options);
+
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+
+    // 4. Return the PDF as binary
+    return $dompdf->output();
+}
+
+private function fetchEventData(Company $company, \DateTime $startDate, \DateTime $endDate): array
+{
+
+
+
+    $validated = 'validated';
+    // 1. Query for events (with event type isFree=0) in the date range
+    $qb = $this->entityManager->createQueryBuilder()
+        ->select('e')
+        ->from(Event::class, 'e')
+        ->join('e.eventType', 'et')
+        ->where('e.company = :company')
+        ->andWhere('e.eventDate BETWEEN :startDate AND :endDate')
+        ->andWhere('e.status = :status')
+        ->andWhere('et.isFree = 0')
+        ->orderBy('e.eventDate', 'ASC')
+        ->setParameter('company', $company)
+        ->setParameter('startDate', $startDate)
+        ->setParameter('endDate', $endDate)
+        ->setParameter('status', $validated);
+
+    /** @var Event[] $events */
+    $events = $qb->getQuery()->getResult();
+
+    $results = [];
+    $totalExpenses = 0;
+    $totalIncome   = 0;
+
+    foreach ($events as $event) {
+        $eventDate = $event->getEventDate();
+        $eventType = $event->getEventType();
+        $dateString = $eventDate?->format('d/m/Y') ?? '';
+        $transactionLabel = $this->makeTransactionLabel($event); // e.g. "achat N°1" or "vente N°2"
+
+        // Decide if it's "expenses" or "income"
+        // If isAnIncreaseStockType() == 1 => 'expenses'
+        // If isAnIncreaseStockType() == 0 => 'income'
+        $amountExpenses = null;
+        $amountIncome   = null;
+        $amount = $event->getTotalPrice() ?? 0;  // or whichever field holds the event's amount
+
+        if ($eventType->getIsAnIncreaseStockType() == 1) {
+            $amountExpenses = $amount;
+            $totalExpenses += $amount;
+        } else {
+            $amountIncome = $amount;
+            $totalIncome += $amount;
+        }
+
+        $results[] = [
+            'date'         => $dateString,
+            'transaction'  => $transactionLabel,
+            'expenses'     => $amountExpenses,
+            'income'       => $amountIncome,
+        ];
+    }
+
+    // 2. At the end, add lines for totals and difference
+    //    or pass them separately to twig
+    $results[] = [
+        'date'        => '',
+        'transaction' => '<strong>Total</strong>',
+        'expenses'    => $totalExpenses,
+        'income'      => $totalIncome,
+    ];
+    $diff = $totalIncome - $totalExpenses;
+    $results[] = [
+        'date'        => '',
+        'transaction' => '<strong>Différence (Recettes - Dépenses)</strong>',
+        'expenses'    => '',
+        'income'      => $diff,
+    ];
+
+    return $results;
+}
+
+private function makeTransactionLabel(Event $event): string
+{
+    $eventTypeName = strtolower($event->getEventType()->getName()); // e.g. "ACHAT" => "achat"
+    return "{$eventTypeName} N°{$event->getId()}";
+}
+
+
+/**
+ * add a route that send to all companies an email to report the payments situation. 
+ * In attached file add the list of the company subscriptions and their status
+ **/
+
+#[Route('/payment-periodic-report', methods: ['POST'])]
+public function sendPaymentPeriodicReport(Request $request): JsonResponse
+{
+    // 1. Determine the period (weekly or monthly). Default to 'monthly'.
+    $period = $request->query->get('period', 'monthly');
+
+    // 2. Calculate date range
+    [$startDate, $endDate] = $this->calculatePeriodDates($period);
+
+    // 3. For testing, you might fetch only company ID=7
+    // Otherwise, fetch all companies: $companies = $this->companyRepository->findAll();
+    $companies = $this->companyRepository->findBy(['id' => 7]);
+
+    foreach ($companies as $company) {
+        // 4. Build PDF for each company
+        $pdfContent = $this->buildPaymentPdf($company, $startDate, $endDate);
+
+        // 5. Compose the email
+        $email = (new Email())
+            ->from(new Address('office@inaxxe.com', 'Shopiques'))
+            ->to($company->getEmail())
+            ->subject("Rapport des paiements - {$period}")
+            ->text("Veuillez trouver ci-joint votre rapport des paiements pour la période {$period}.")
+            ->attach($pdfContent, "payments_report_{$period}.pdf", 'application/pdf');
+
+        // 6. Send email
+        $this->mailer->send($email);
+    }
+
+    return new JsonResponse([
+        'status' => 1,
+        'message' => "Payment report ($period) sent to all companies.",
+        'count' => count($companies),
+    ], JsonResponse::HTTP_OK);
+}
+
+
+private function buildPaymentPdf(Company $company, \DateTime $startDate, \DateTime $endDate): string
+{
+    // 1. Fetch the relevant payments for this company and date range
+    $paymentsData = $this->fetchPaymentData($company, $startDate, $endDate);
+
+    // 2. Render the HTML via Twig
+    $html = $this->renderView('pdf/payments_report.html.twig', [
+        'company'    => $company,
+        'startDate'  => $startDate,
+        'endDate'    => $endDate,
+        'paymentsData' => $paymentsData,
+    ]);
+
+    // 3. Use Dompdf to generate PDF
+    $options = new Options();
+    $options->set('defaultFont', 'DejaVu Sans');  // or another suitable font
+    $dompdf = new Dompdf($options);
+
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+
+    // 4. Return the PDF as a binary string
+    return $dompdf->output();
+}
+
+private function fetchPaymentData(Company $company, \DateTime $startDate, \DateTime $endDate): array
+{
+
+    $validated = 'validated';
+
+    // 1. Query for payments in the date range
+    // Payment always has an event (mandatory), so no need to check p.event IS NOT NULL.
+    $qb = $this->entityManager->createQueryBuilder()
+        ->select('p')
+        ->from(Payment::class, 'p')
+        ->join('p.event', 'ev')
+        ->join('ev.eventType', 'et')
+        ->where('p.paymentDate BETWEEN :startDate AND :endDate')
+        ->andWhere('ev.company = :company')
+        ->andWhere('ev.status = :status')
+        ->orderBy('p.paymentDate', 'ASC')
+        ->setParameter('startDate', $startDate)
+        ->setParameter('endDate', $endDate)
+        ->setParameter('company', $company)
+        ->setParameter('status', $validated);
+
+    /** @var Payment[] $payments */
+    $payments = $qb->getQuery()->getResult();
+
+    $results = [];
+    $totalExpenses = 0;
+    $totalIncome   = 0;
+
+    foreach ($payments as $payment) {
+        // Payment date
+        $paymentDate = $payment->getPaymentDate();
+        $dateString  = $paymentDate?->format('d/m/Y') ?? '';
+
+        // Payment number
+        $paymentLabel = "Règlement N°{$payment->getId()}";
+
+        // Retrieve the related event
+        $event       = $payment->getEvent();
+        $eventType   = $event->getEventType();
+        $eventDate   = $event->getEventDate();
+        $eventDateStr = $eventDate?->format('d/m/Y') ?? '';
+        $eventLabel  = "{$eventType->getName()} N°{$event->getId()} du {$eventDateStr}";
+
+        // Classify payment amount as expenses or income
+        $amountExpenses = null;
+        $amountIncome   = null;
+        $amount = $payment->getAmount() ?? 0;
+
+        // If isAnIncreaseStockType() == 1 => 'expenses'
+        // If isAnIncreaseStockType() == 0 => 'income'
+        if ($eventType->getIsAnIncreaseStockType() == 1) {
+            $amountExpenses = $amount;
+            $totalExpenses += $amount;
+        } else {
+            $amountIncome = $amount;
+            $totalIncome += $amount;
+        }
+
+        $results[] = [
+            'paymentDate'      => $dateString,
+            'paymentNumber'    => $paymentLabel,
+            'transactionLabel' => $eventLabel,
+            'expenses'         => $amountExpenses,
+            'income'           => $amountIncome,
+        ];
+    }
+
+    // 2. Append totals and difference rows
+    $results[] = [
+        'paymentDate'      => '',
+        'paymentNumber'    => '<strong>Total</strong>',
+        'transactionLabel' => '',
+        'expenses'         => $totalExpenses,
+        'income'           => $totalIncome,
+    ];
+
+    $diff = $totalIncome - $totalExpenses;
+    $results[] = [
+        'paymentDate'      => '',
+        'paymentNumber'    => '<strong>Différence (Recettes - Dépenses)</strong>',
+        'transactionLabel' => '',
+        'expenses'         => '',
+        'income'           => $diff,
+    ];
+
+    return $results;
+}
+
+
+/**
+ * add a route that send to all companies an email to report the stock, events and payments situation. 
+ * In attached file add the list of the company items and stock quantity, the list of the company events and their total amount, 
+ * the list of the company subscriptions and their status
+ **/
+#[Route('/all-periodic-reports', methods: ['POST'])]
+public function sendAllPeriodicReports(Request $request): JsonResponse
+{
+    // 1. Determine the period (weekly or monthly). Default to 'monthly'
+    $period = $request->query->get('period', 'monthly');
+
+    // We'll convert 'weekly'/'monthly' to a French label for the email text
+    $periodLabel = $period === 'weekly' ? 'hebdomadaire' : 'mensuelle';
+
+    // 2. Calculate date range using your existing method
+    [$startDate, $endDate] = $this->calculatePeriodDates($period);
+
+    // 3. For testing, fetch only company ID=7 => $companies = $this->companyRepository->findBy(['id' => 7]);
+    // In production, you'd likely do: $companies = $this->companyRepository->findAll();
+    $companies = $this->companyRepository->findAll();
+
+    foreach ($companies as $company) {
+        // 4. Build each PDF
+        // STOCK
+        $items = $this->itemRepository->findBy(['company' => $company]);
+        $stockPdf   = $this->buildStockPdf($company, $items, $startDate, $endDate);
+
+        // EVENTS (transactions payantes)
+        $eventPdf   = $this->buildEventPdf($company, $startDate, $endDate);
+
+        // PAYMENTS (règlements)
+        $paymentPdf = $this->buildPaymentPdf($company, $startDate, $endDate);
+
+        // 5. Compose *one* email with 3 attachments
+        $emailBody = 
+            "Bonjour {$company->getName()},\n\n" .
+            "Veuillez trouver ci-joint les 3 rapports de votre activité {$periodLabel} :\n" .
+            "- Le relevé de stock\n" .
+            "- Le relevé des transactions payantes\n" .
+            "- Le relevé des règlements\n\n" .
+            "Cordialement,\n" .
+            "L'équipe Shopiques.";
+
+        $email = (new Email())
+            ->from(new Address('office@inaxxe.com', 'Shopiques'))
+            ->to($company->getEmail())
+            ->subject("Vos rapports d'activité {$periodLabel}")
+            ->text($emailBody)
+            // Attach the three PDFs
+            ->attach($stockPdf,   "stock_report_{$period}.pdf",   'application/pdf')
+            ->attach($eventPdf,   "events_report_{$period}.pdf",  'application/pdf')
+            ->attach($paymentPdf, "payments_report_{$period}.pdf",'application/pdf');
+
+        // 6. Send the single email
+        $this->mailer->send($email);
+    }
+
+    return new JsonResponse([
+        'status' => 1,
+        'message' => "All 3 reports ($period) sent to each company in a single email.",
+        'count' => count($companies),
+    ], JsonResponse::HTTP_OK);
+}
+
+
+#[Route('/auto-monthly-reports', methods: ['GET'])]
+public function triggerMonthlyReports(): JsonResponse
+{
+    $request = new Request();
+    $request->query->set('period', 'monthly');
+    return $this->sendAllPeriodicReports($request);
+}
+
 }
