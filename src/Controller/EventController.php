@@ -163,8 +163,8 @@ class EventController extends AbstractController
         }
 
 
-         // create payment if instant payment was set
-         if (isset($data['is_instant_payment_done'])) {
+         // create payment if instant payment was set and event type is not free
+         if (isset($data['is_instant_payment_done']) && $eventType->getIsFree() == 0) {
             $is_instant_payment_done = $data['is_instant_payment_done'];
             if ($is_instant_payment_done === true) {
                 //get ventes id

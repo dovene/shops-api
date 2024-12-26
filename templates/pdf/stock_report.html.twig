@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport de stock - {{ company.name }}</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 8px;
+            padding: 4px;
+        }
+        th {
+            background-color: #eee;
+        }
+        body { font-size: 12px; }
+        h1 { font-size: 18px; }
+    
+        /* Position the footer line at the bottom */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: left;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Relevé de stock</h2>
+<p>Entreprise : {{ company.name }} (Code: {{ company.code }})</p>
+<p>Période : {{ startDate|date('d/m/Y') }} au {{ endDate|date('d/m/Y') }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Reference</th>
+            <th>Quantité initiale</th>
+            <th>Quantité entrée</th>
+            <th>Quantité sortie</th>
+            <th>Quantité finale</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in itemsData %}
+        <tr>
+            <td>{{ row.name }}</td>
+            <td>{{ row.reference }}</td>
+            <td>{{ row.initialQty }}</td>
+            <td>{{ row.qtyIn }}</td>
+            <td>{{ row.qtyOut }}</td>
+            <td>{{ row.finalQty }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- Footer placed at the bottom using position: fixed -->
+<div class="footer">
+    Généré le {{ "now"|date("d/m/Y H:i") }}.
+</div>
+
+</body>
+</html>
