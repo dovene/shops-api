@@ -383,14 +383,18 @@ class ReportController extends AbstractController
         // If you store "isAnIncreaseStockType" or "event_type_id = 'ACHAT'" or "VENTES"
         // do a custom query to sum them up. Pseudocode:
 
+        $validated = 'validated';
+
         $qb = $this->entityManager->createQueryBuilder()
             ->select('ei')
             ->from(EventItem::class, 'ei')
             ->join('ei.event', 'ev')
             ->where('ei.item = :item')
             ->andWhere('ev.eventDate < :startDate')
+            ->andWhere('ev.status = :status')
             ->setParameter('item', $item)
-            ->setParameter('startDate', $startDate);
+            ->setParameter('startDate', $startDate)
+            ->setParameter('status', $validated);
 
         $eventItemsBefore = $qb->getQuery()->getResult();
 
@@ -413,12 +417,15 @@ class ReportController extends AbstractController
 
     private function calculateQuantityIn(Item $item, \DateTime $startDate, \DateTime $endDate): int
     {
+        $validated = 'validated';
+
         $qb = $this->entityManager->createQueryBuilder();
         $qb->select('COALESCE(SUM(ei.quantity), 0) as totalIn')
             ->from(EventItem::class, 'ei')
             ->join('ei.event', 'ev')
             ->where('ei.item = :item')
             ->andWhere('ev.eventDate BETWEEN :startDate AND :endDate')
+            ->andWhere('ev.status = :status')
             ->andWhere('ev.eventType IN (
              SELECT et
              FROM App\Entity\EventType et
@@ -426,7 +433,8 @@ class ReportController extends AbstractController
        )')
             ->setParameter('item', $item)
             ->setParameter('startDate', $startDate)
-            ->setParameter('endDate', $endDate);
+            ->setParameter('endDate', $endDate)
+            ->setParameter('status', $validated);
 
         $result = $qb->getQuery()->getOneOrNullResult();
         return $result['totalIn'] ?? 0;
@@ -434,12 +442,14 @@ class ReportController extends AbstractController
 
     private function calculateQuantityOut(Item $item, \DateTime $startDate, \DateTime $endDate): int
     {
+        $validated = 'validated';
         $qb = $this->entityManager->createQueryBuilder();
         $qb->select('COALESCE(SUM(ei.quantity), 0) as totalOut')
             ->from(EventItem::class, 'ei')
             ->join('ei.event', 'ev')
             ->where('ei.item = :item')
             ->andWhere('ev.eventDate BETWEEN :startDate AND :endDate')
+            ->andWhere('ev.status = :status')
             ->andWhere('ev.eventType IN (
              SELECT et
              FROM App\Entity\EventType et
@@ -447,7 +457,8 @@ class ReportController extends AbstractController
        )')
             ->setParameter('item', $item)
             ->setParameter('startDate', $startDate)
-            ->setParameter('endDate', $endDate);
+            ->setParameter('endDate', $endDate)
+            ->setParameter('status', $validated);
 
         $result = $qb->getQuery()->getOneOrNullResult();
 
@@ -481,7 +492,7 @@ public function sendEventPeriodicReport(Request $request): JsonResponse
         $email = (new Email())
             ->from(new Address('office@inaxxe.com', 'Shopiques'))
             ->to($company->getEmail())
-            ->subject("Rapport des événements - {$period}")
+            ->subject("Rapport des transactions - {$period}")
             ->text("Veuillez trouver ci-joint votre rapport des événements pour la période {$period}.")
             ->attach($pdfContent, "events_report_{$period}.pdf", 'application/pdf');
 
@@ -524,9 +535,6 @@ private function buildEventPdf(Company $company, \DateTime $startDate, \DateTime
 
 private function fetchEventData(Company $company, \DateTime $startDate, \DateTime $endDate): array
 {
-
-
-
     $validated = 'validated';
     // 1. Query for events (with event type isFree=0) in the date range
     $qb = $this->entityManager->createQueryBuilder()

@@ -221,3 +221,12 @@ ADD COLUMN requires_stock_management tinyint(1) NOT NULL DEFAULT 1;
 
 ALTER TABLE item
 ADD COLUMN initial_quantity int DEFAULT 0;
+
+ALTER TABLE `event`
+ADD COLUMN title varchar(500) DEFAULT NULL;
+
+ALTER TABLE company
+ADD COLUMN can_default_users_create_items tinyint(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE company
+ADD COLUMN can_default_users_cancel_events tinyint(1) NOT NULL DEFAULT 1;
