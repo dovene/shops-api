@@ -113,6 +113,7 @@ class EventController extends AbstractController
         $event->setUser($user);
         $event->setCreatedAt(new \DateTime());
         $event->setStatus('VALIDATED'); // Default status
+        $event->setTitle($data['title'] ?? null);
 
         // First persist the event to get the ID
         $this->entityManager->persist($event);

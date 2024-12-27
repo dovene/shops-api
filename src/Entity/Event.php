@@ -98,7 +98,11 @@ class Event
     #[ORM\OneToMany(mappedBy: 'event', targetEntity: Payment::class, cascade: ['persist', 'remove'])]
     #[Serializer\Groups(groups: ['event:read'])]
     private $payments;
-   
+
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    #[Serializer\Groups(groups: ['event:read','event:write'])]
+    private $title;
+
     public function __construct()
     {
         $this->eventItems = new ArrayCollection();
@@ -273,5 +277,18 @@ class Event
 
         return $this;
     }
+
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(?string $title): self
+    {
+        $this->title = $title;
+
+        return $this;
+    }
+
 
 }

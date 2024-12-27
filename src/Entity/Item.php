@@ -89,9 +89,25 @@ class Item
     #[Serializer\Groups(groups: ['item:read'])]
     private ?\DateTimeInterface $createdAt = null;
 
-   
+    #[ORM\Column(type: 'integer',name: 'initial_quantity', options: ['default' => 0])]
+    #[Groups(['item:read'])]
+    private ?int $initialQuantity = 0;
 
+   
+   
     // Getters and Setters
+
+    public function getInitialQuantity(): ?int
+    {
+        return $this->initialQuantity;
+    }
+
+    public function setInitialQuantity(int $initialQuantity): self
+    {
+        $this->initialQuantity = $initialQuantity;
+
+        return $this;
+    }
 
     public function getId(): ?int
     {

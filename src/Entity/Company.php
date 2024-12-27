@@ -81,6 +81,16 @@ class Company
     #[Groups(['company:read', 'company:write'])]
     private ?string $currency = null;
 
+    #[ORM\Column(type: 'boolean', name: 'can_default_users_create_items', options: ['default' => 1])]
+    #[Groups(['company:read', 'company:write'])]
+    private ?int $canDefaultUsersCreateItems = 1;
+
+
+    #[ORM\Column(type: 'boolean', name: 'can_default_users_cancel_events', options: ['default' => 1])]
+    #[Groups(['company:read', 'company:write'])]
+    private ?int $canDefaultUsersCancelEvents = 1;
+   
+
     // Getters and Setters
 
     public function getId(): ?int
@@ -204,6 +214,30 @@ class Company
     public function setCurrency(?string $currency): self
     {
         $this->currency = $currency;
+
+        return $this;
+    }
+
+    public function getCanDefaultUsersCreateItems(): ?int
+    {
+        return $this->canDefaultUsersCreateItems;
+    }
+    
+    public function setCanDefaultUsersCreateItems(?int $canDefaultUsersCreateItems): self
+    {
+        $this->canDefaultUsersCreateItems = $canDefaultUsersCreateItems;
+
+        return $this;
+    }
+
+    public function getCanDefaultUsersCancelEvents(): ?int
+    {
+        return $this->canDefaultUsersCancelEvents;
+    }
+
+    public function setCanDefaultUsersCancelEvents(?int $canDefaultUsersCancelEvents): self
+    {
+        $this->canDefaultUsersCancelEvents = $canDefaultUsersCancelEvents;
 
         return $this;
     }

@@ -101,6 +101,10 @@ class ItemController extends AbstractController
         $instance->setBuyPrice($data['buy_price'] ?? null);
         $instance->setpicture($data['picture'] ?? null);
         $instance->setRequiresStockManagement($data['requires_stock_management'] ?? 1);
+       // set the initial quantity and set the quantity to the initial quantity or 0 if not provided
+        $instance->setInitialQuantity($data['initial_quantity'] ?? 0);
+        $instance->setQuantity($data['initial_quantity'] ?? 0);
+       
         $instance->setCompany($company); 
         $instance->setUser($user);
         $instance->setItemCategory($category);

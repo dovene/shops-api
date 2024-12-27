@@ -376,8 +376,7 @@ class ReportController extends AbstractController
         // 3. Subtract all "out" events up to $startDate
 
         // Possibly you track an "initialQuantity" in the item entity itself:
-        //$base = $item->getInitialQuantity() ?? 0;
-        $base = 0;
+        $base = $item->getInitialQuantity() ?? 0;
 
         // Then gather all events for that item before $startDate
         // If you store "isAnIncreaseStockType" or "event_type_id = 'ACHAT'" or "VENTES"
