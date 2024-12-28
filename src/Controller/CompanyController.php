@@ -89,7 +89,10 @@ class CompanyController extends AbstractController
         $company->setAddressDetails($data['address_details'] ?? null);
         $company->setStatus($data['status'] ?? 'draft');
         $company->setCurrency($data['currency'] ?? null);
+        $company->setCanDefaultUsersCreateItems($data['can_default_users_create_items'] ?? 1);
+        $company->setCanDefaultUsersCancelEvents($data['can_default_users_cancel_events'] ?? 1);
         $company->setCreatedAt(new \DateTime());
+        
 
         $errors = $this->validator->validate($company);
 
@@ -157,6 +160,8 @@ class CompanyController extends AbstractController
         $company->setStatus($data['status'] ?? $company->getStatus());
         $company->setCode($data['code'] ?? $company->getCode());
         $company->setCurrency($data['currency'] ?? $company->getCurrency());
+        $company->setCanDefaultUsersCreateItems($data['can_default_users_create_items'] ?? $company->getCanDefaultUsersCreateItems());
+        $company->setCanDefaultUsersCancelEvents($data['can_default_users_cancel_events'] ?? $company->getCanDefaultUsersCancelEvents());
 
         $errors = $this->validator->validate($company);
 
@@ -214,5 +219,5 @@ class CompanyController extends AbstractController
         // Send the email
         $this->mailer->send($email);
     }
-    
+
 }

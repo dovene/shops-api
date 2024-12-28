@@ -705,5 +705,107 @@ public function getProductRankingByAmount(Request $request, int $companyId): Jso
     return $this->json($ranking);
 }
 
+#[Route('/convert/{id}', methods: ['POST'])]
+public function convertToVente(int $id, Request $request): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
+    
+    if (!isset($data['user_id'])) {
+        return $this->json(['message' => 'Missing required field: user_id'], JsonResponse::HTTP_BAD_REQUEST);
+    }
+    $user = $this->userRepository->find($data['user_id']);
+    if (!$user) {
+        return $this->json(['message' => 'User not found'], JsonResponse::HTTP_NOT_FOUND);
+    }
+
+    $sourceEvent = $this->eventRepository->find($id);
+    if (!$sourceEvent) {
+        return $this->json(['message' => 'Source event not found'], JsonResponse::HTTP_NOT_FOUND);
+    }
+
+    // Validate source event type is free and is_an_increase_stock_type ==2  (devis)
+    if (!$sourceEvent->getEventType()->getIsFree() && $sourceEvent->getEventType()->getIsAnIncreaseStockType() == 2) {
+        return $this->json(['message' => 'Source event must be of free type (devis)'], JsonResponse::HTTP_BAD_REQUEST);
+    }
+
+    // Get vente event type
+    $venteType = $this->eventTypeRepository->findOneBy(['name' => 'VENTES']);
+    if (!$venteType) {
+        return $this->json(['message' => 'Vente event type not found'], JsonResponse::HTTP_NOT_FOUND);
+    }
+
+    // Validate stock quantities
+    $insufficientStock = [];
+    foreach ($sourceEvent->getEventItems() as $eventItem) {
+        $item = $eventItem->getItem();
+        if ($item->getRequiresStockManagement() && $item->getQuantity() < $eventItem->getQuantity()) {
+            $insufficientStock[] = [
+                'item' => $item->getName(),
+                'requested' => $eventItem->getQuantity(),
+                'available' => $item->getQuantity()
+            ];
+        }
+    }
+
+    if (!empty($insufficientStock)) {
+        return $this->json([
+            'message' => 'Insufficient stock for some items',
+            'items' => $insufficientStock
+        ], JsonResponse::HTTP_BAD_REQUEST);
+    }
+
+    // Create new vente event
+    $newEvent = new Event();
+    $newEvent->setEventDate(new \DateTime());
+    $newEvent->setTva($sourceEvent->getTva());
+    $newEvent->setEventType($venteType);
+    $newEvent->setBusinessPartner($sourceEvent->getBusinessPartner());
+    $newEvent->setCompany($sourceEvent->getCompany());
+    $newEvent->setUser($user);
+    $newEvent->setCreatedAt(new \DateTime());
+    $newEvent->setStatus('VALIDATED');
+    $newEvent->setTitle($sourceEvent->getTitle());
+
+    $this->entityManager->persist($newEvent);
+    
+    // Copy event items and update stock
+    $totalQuantity = 0;
+    $totalPrice = 0;
+
+    foreach ($sourceEvent->getEventItems() as $sourceItem) {
+        $eventItem = new EventItem();
+        $eventItem->setQuantity($sourceItem->getQuantity());
+        $eventItem->setPrice($sourceItem->getPrice());
+        $eventItem->setEvent($newEvent);
+        $eventItem->setItem($sourceItem->getItem());
+
+        $totalQuantity += $eventItem->getQuantity();
+        $totalPrice += $eventItem->getPrice() * $eventItem->getQuantity();
+
+        // Update stock
+        $item = $sourceItem->getItem();
+        if ($item->getRequiresStockManagement()) {
+            $item->setQuantity($item->getQuantity() - $eventItem->getQuantity());
+            $this->entityManager->persist($item);
+        }
+
+        $this->entityManager->persist($eventItem);
+    }
+
+    // Update totals
+    $newEvent->setTotalQuantity($totalQuantity);
+    $newEvent->setTotalPrice($totalPrice);
+
+    if ($newEvent->getTva()) {
+        $totalPrice = $newEvent->getTotalPrice() + ($newEvent->getTotalPrice() * $newEvent->getTva()/100);
+        $newEvent->setTotalPrice($totalPrice);
+    }
+
+    $this->entityManager->flush();
+
+    $data = $this->serializer->serialize($newEvent, 'json', ['groups' => 'event:read']);
+    return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
+}
+
 
 }
