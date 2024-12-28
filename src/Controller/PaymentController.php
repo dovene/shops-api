@@ -91,37 +91,53 @@ class PaymentController extends AbstractController
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-
-        if (!isset($data['event_id']) || !isset($data['payment_type_id']) || !isset($data['user_id']) || !isset($data['amount'] )) {
+    
+        if (!isset($data['event_id']) || !isset($data['payment_type_id']) || !isset($data['user_id']) || !isset($data['amount'])) {
             return $this->json(['message' => 'Missing required fields'], JsonResponse::HTTP_BAD_REQUEST);
         }
-
-
+    
         $event = $this->eventRepository->find($data['event_id']);
         $paymentType = $this->paymentTypeRepository->find($data['payment_type_id']);
         $user = $this->userRepository->find($data['user_id']);
-
-        if (!$event || !$paymentType  || !$user) {
+    
+        if (!$event || !$paymentType || !$user) {
             return $this->json(['message' => 'Invalid data'], JsonResponse::HTTP_BAD_REQUEST);
         }
-
+    
+        // Calculate total possible payment
+        $newPaymentAmount = $data['amount'] ?? 0;
+        $currentTotalPayments = $event->getTotalPayment();
+        $eventTotalPrice = $event->getTotalPrice();
+        $totalAfterPayment = $currentTotalPayments + $newPaymentAmount;
+    
+        // Check if payment would exceed total price
+        if ($totalAfterPayment > $eventTotalPrice) {
+            $remainingAmount = $eventTotalPrice - $currentTotalPayments;
+            return $this->json([
+                'message' => 'Le montant du paiement dépasse le total autorisé',
+                'details' => [
+                    'montant_demandé' => $newPaymentAmount,
+                    'montant_restant_à_payer' => $remainingAmount,
+                    'total_déjà_payé' => $currentTotalPayments,
+                    'prix_total' => $eventTotalPrice
+                ]
+            ], JsonResponse::HTTP_BAD_REQUEST);
+        }
+    
         $instance = new Payment();
         $instance->setPaymentDate(new \DateTime($data['payment_date'] ?? 'now'));
-        $instance->setAmount($data['amount'] ?? null);
+        $instance->setAmount($newPaymentAmount);
         $instance->setUser($user);
         $instance->setPaymentType($paymentType);
         $instance->setEvent($event);
         $instance->setCreatedAt(new \DateTime());
-
-      
+    
         $this->entityManager->persist($instance);
-       // $this->entityManager->flush();
-
-
-        //update event totalPayment
-        $event->setTotalPayment($instance->getAmount() + $event->getTotalPayment());
+        
+        // Update event totalPayment
+        $event->setTotalPayment($totalAfterPayment);
         $this->entityManager->flush();
-     
+         
         $data = $this->serializer->serialize($instance, 'json', ['groups' => 'payment:read']);
         return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
     }
