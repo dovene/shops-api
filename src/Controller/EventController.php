@@ -723,15 +723,23 @@ public function convertToVente(int $id, Request $request): JsonResponse
         return $this->json(['message' => 'Source event not found'], JsonResponse::HTTP_NOT_FOUND);
     }
 
-    // Validate source event type is free and is_an_increase_stock_type ==2  (devis)
+    // Validate source event type is free and is_an_increase_stock_type ==2  (devis or bon de de commande)
     if (!$sourceEvent->getEventType()->getIsFree() && $sourceEvent->getEventType()->getIsAnIncreaseStockType() == 2) {
-        return $this->json(['message' => 'Source event must be of free type (devis)'], JsonResponse::HTTP_BAD_REQUEST);
+        return $this->json(['message' => 'Source event must be of free type (devis or bon de commande)'], JsonResponse::HTTP_BAD_REQUEST);
     }
 
-    // Get vente event type
+    // By default we suppose the source event type is devis so we look for ventes event type to convert to
     $venteType = $this->eventTypeRepository->findOneBy(['name' => 'VENTES']);
     if (!$venteType) {
         return $this->json(['message' => 'Vente event type not found'], JsonResponse::HTTP_NOT_FOUND);
+    }
+
+    // if source event type is bon de commande we look for achat event type to convert to
+    if ($sourceEvent->getEventType()->getName() == 'BON DE COMMANDE') {
+        $venteType = $this->eventTypeRepository->findOneBy(['name' => 'ACHATS']);
+        if (!$venteType) {
+            return $this->json(['message' => 'Achat event type not found'], JsonResponse::HTTP_NOT_FOUND);
+        }
     }
 
     // Validate stock quantities
