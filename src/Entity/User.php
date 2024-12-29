@@ -62,8 +62,38 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Serializer\Groups(groups: ['user:read','user:write'])]
     private $company;
 
+    #[ORM\Column(type: 'string', name: 'reset_token', length: 100, nullable: true)]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
+    private $resetToken;
+
+    #[ORM\Column(type: 'datetime', name: 'reset_token_expiry', nullable: true)]
+    #[Serializer\Groups(groups: ['user:read','user:write'])]
+    private $resetTokenExpiry;
+
+   
     // Getters and Setters
 
+    public function getResetToken(): ?string
+    {
+        return $this->resetToken;
+    }
+
+    public function setResetToken(?string $resetToken): self
+    {
+        $this->resetToken = $resetToken;
+        return $this;
+    }
+
+    public function getResetTokenExpiry(): ?\DateTimeInterface
+    {
+        return $this->resetTokenExpiry;
+    }
+
+    public function setResetTokenExpiry(?\DateTimeInterface $resetTokenExpiry): self
+    {
+        $this->resetTokenExpiry = $resetTokenExpiry;
+        return $this;
+    }
     public function getId(): ?int
     {
         return $this->id;

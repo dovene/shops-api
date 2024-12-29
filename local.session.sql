@@ -230,3 +230,11 @@ ADD COLUMN can_default_users_create_items tinyint(1) NOT NULL DEFAULT 1;
 
 ALTER TABLE company
 ADD COLUMN can_default_users_cancel_events tinyint(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE user
+ADD COLUMN reset_token varchar(100) DEFAULT NULL;
+
+ALTER TABLE user
+ADD COLUMN reset_token_expiry DATETIME DEFAULT NULL;
+
+INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("BON DE COMMANDE",2, 1);
