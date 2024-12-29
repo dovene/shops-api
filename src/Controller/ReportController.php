@@ -842,4 +842,64 @@ public function triggerMonthlyReports(): JsonResponse
     return $this->sendAllPeriodicReports($request);
 }
 
+#[Route('/active-companies', methods: ['GET'])]
+public function getActiveCompanies(Request $request): JsonResponse
+{
+    // Get number of weeks from query parameter, default to 2 if not provided
+    $weeks = $request->query->get('weeks', 2);
+    
+    // Validate that weeks is a positive number
+    if (!is_numeric($weeks) || $weeks <= 0) {
+        return new JsonResponse([
+            'status' => 0,
+            'message' => 'The weeks parameter must be a positive number',
+        ], JsonResponse::HTTP_BAD_REQUEST);
+    }
+
+    // Calculate the date threshold based on the number of weeks
+    $threshold = new \DateTime("-{$weeks} weeks");
+    $threshold->setTime(0, 0, 0);  // Start of the day
+
+    // Get all companies
+    $companies = $this->companyRepository->findAll();
+
+    // Filter for active companies
+    $activeCompanies = array_filter($companies, function (Company $company) use ($threshold) {
+        $validated = 'validated';
+        
+        // Query for any events since the threshold date
+        $recentEvents = $this->eventRepository->createQueryBuilder('e')
+            ->where('e.company = :company')
+            ->andWhere('e.eventDate >= :threshold')
+            ->andWhere('e.status = :status')
+            ->setParameter('company', $company)
+            ->setParameter('threshold', $threshold)
+            ->setParameter('status', $validated)
+            ->setMaxResults(1)  // We only need to know if any exist
+            ->getQuery()
+            ->getResult();
+
+        return count($recentEvents) > 0;
+    });
+
+    // Prepare response data
+    $responseData = array_map(function (Company $company) {
+        return [
+            'id' => $company->getId(),
+            'name' => $company->getName(),
+            'email' => $company->getEmail(),
+            // Add any other relevant company fields you want to include
+        ];
+    }, array_values($activeCompanies));
+
+    return new JsonResponse([
+        'status' => 1,
+        'message' => "Active companies (past {$weeks} weeks) retrieved successfully",
+        'count' => count($activeCompanies),
+        'weeks' => (int)$weeks,
+        'startDate' => $threshold->format('Y-m-d'),
+        'companies' => $responseData
+    ]);
+}
+
 }
