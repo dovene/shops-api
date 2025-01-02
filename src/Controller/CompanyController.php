@@ -91,6 +91,8 @@ class CompanyController extends AbstractController
         $company->setCurrency($data['currency'] ?? null);
         $company->setCanDefaultUsersCreateItems($data['can_default_users_create_items'] ?? 1);
         $company->setCanDefaultUsersCancelEvents($data['can_default_users_cancel_events'] ?? 1);
+        $company->setTermsAndConditions($data['terms_and_conditions'] ?? null);
+        $company->setShouldDisplayTerms($data['should_display_terms'] ?? 1);
         $company->setCreatedAt(new \DateTime());
         
 
@@ -162,6 +164,8 @@ class CompanyController extends AbstractController
         $company->setCurrency($data['currency'] ?? $company->getCurrency());
         $company->setCanDefaultUsersCreateItems($data['can_default_users_create_items'] ?? $company->getCanDefaultUsersCreateItems());
         $company->setCanDefaultUsersCancelEvents($data['can_default_users_cancel_events'] ?? $company->getCanDefaultUsersCancelEvents());
+        $company->setTermsAndConditions($data['terms_and_conditions'] ?? $company->getTermsAndConditions());
+        $company->setShouldDisplayTerms($data['should_display_terms'] ?? $company->getShouldDisplayTerms());
 
         $errors = $this->validator->validate($company);
 

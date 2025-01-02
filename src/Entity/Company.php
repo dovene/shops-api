@@ -90,7 +90,14 @@ class Company
     #[Groups(['company:read', 'company:write'])]
     private ?int $canDefaultUsersCancelEvents = 1;
    
+    #[ORM\Column(type: 'string', length: 1200, nullable: true)]
+    #[Groups(['company:read', 'company:write'])]
+    private ?string $termsAndConditions = null;
 
+    #[ORM\Column(type: 'boolean', name: 'should_display_terms', options: ['default' => 1])]
+    #[Groups(['company:read', 'company:write'])]
+    private ?int $shouldDisplayTerms = 1;
+    
     // Getters and Setters
 
     public function getId(): ?int
@@ -239,6 +246,28 @@ class Company
     {
         $this->canDefaultUsersCancelEvents = $canDefaultUsersCancelEvents;
 
+        return $this;
+    }
+
+    public function getTermsAndConditions(): ?string
+    {
+        return $this->termsAndConditions;
+    }
+
+    public function setTermsAndConditions(?string $termsAndConditions): self
+    {
+        $this->termsAndConditions = $termsAndConditions;
+        return $this;
+    }
+
+    public function getShouldDisplayTerms(): ?int
+    {
+        return $this->shouldDisplayTerms;
+    }
+
+    public function setShouldDisplayTerms(?int $shouldDisplayTerms): self
+    {
+        $this->shouldDisplayTerms = $shouldDisplayTerms;
         return $this;
     }
 }

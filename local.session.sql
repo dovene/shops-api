@@ -223,7 +223,7 @@ ALTER TABLE item
 ADD COLUMN initial_quantity int DEFAULT 0;
 
 ALTER TABLE `event`
-ADD COLUMN title varchar(500) DEFAULT NULL;
+ADD COLUMN title varchar(300) DEFAULT NULL;
 
 ALTER TABLE company
 ADD COLUMN can_default_users_create_items tinyint(1) NOT NULL DEFAULT 1;
@@ -238,3 +238,9 @@ ALTER TABLE user
 ADD COLUMN reset_token_expiry DATETIME DEFAULT NULL;
 
 INSERT INTO event_type (name, is_an_increase_stock_type, is_free) VALUES ("BON DE COMMANDE",2, 1);
+
+ALTER TABLE company
+ADD COLUMN terms_and_conditions varchar(1200) DEFAULT NULL;
+
+ALTER TABLE company
+ADD COLUMN should_display_terms tinyint(1) NOT NULL DEFAULT 1;
