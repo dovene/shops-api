@@ -93,10 +93,25 @@ class Item
     #[Groups(['item:read'])]
     private ?int $initialQuantity = 0;
 
-   
+    #[ORM\Column(type: 'integer',name: 'alert_stock', options: ['default' => 0])]
+    #[Groups(['item:read'])]
+    private ?int $alertStock = 0;
+
    
     // Getters and Setters
 
+    public function getAlertStock(): ?int
+    {
+        return $this->alertStock;
+    }
+
+    public function setAlertStock(int $alertStock): self
+    {
+        $this->alertStock = $alertStock;
+
+        return $this;
+    }
+    
     public function getInitialQuantity(): ?int
     {
         return $this->initialQuantity;

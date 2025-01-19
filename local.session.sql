@@ -244,3 +244,6 @@ ADD COLUMN terms_and_conditions varchar(1200) DEFAULT NULL;
 
 ALTER TABLE company
 ADD COLUMN should_display_terms tinyint(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE item
+ADD COLUMN alert_stock int DEFAULT 0;
